@@ -1,0 +1,236 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import { Eye, Wrench, Inbox, Activity } from "lucide-react";
+import { Panel } from "@/components/sigmalab/Panel";
+import { StatusBadge } from "@/components/sigmalab/StatusBadge";
+import { Modal, FormField, inputCls } from "@/components/sigmalab/Modal";
+import { Button } from "@/components/ui/button";
+import { store, useStore, type Asignacion, type ReportePasante } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+
+type EstadoIncidencia = "Pendiente" | "En proceso" | "Completado";
+
+export function BandejaPreventivoView() {
+  const { user } = useAuth();
+  const asignaciones = useStore((s) => s.asignaciones);
+  const reportes = useStore((s) => s.reportesPasante);
+
+  // "ysarzuri" es el username demo del pasante preventivo
+  const myKey = user?.id === "u-prev" ? "ysarzuri" : user?.id ?? "";
+  const misAsignadas = asignaciones.filter((a) => a.asignadoA === myKey);
+
+  const [verAsig, setVerAsig] = useState<Asignacion | null>(null);
+  const [resolverAsig, setResolverAsig] = useState<Asignacion | null>(null);
+  const [verRep, setVerRep] = useState<ReportePasante | null>(null);
+  const [resolverRep, setResolverRep] = useState<ReportePasante | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-navy">Incidencias</h1>
+        <p className="text-sm text-muted-foreground">Tus incidencias asignadas y todas las incidencias activas del sistema</p>
+      </div>
+
+      <Panel title={
+        <span className="flex items-center gap-2"><Inbox className="size-4 text-teal" /> Mis incidencias asignadas ({misAsignadas.length})</span> as unknown as string
+      }>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Fecha</th>
+                <th className="px-4 py-3 font-semibold">Equipo</th>
+                <th className="px-4 py-3 font-semibold">Lab</th>
+                <th className="px-4 py-3 font-semibold">Problema</th>
+                <th className="px-4 py-3 font-semibold">Prioridad</th>
+                <th className="px-4 py-3 font-semibold">Estado</th>
+                <th className="px-4 py-3 font-semibold text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {misAsignadas.map((a) => (
+                <tr key={a.id}>
+                  <td className="px-4 py-3 text-muted-foreground">{a.fecha}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-teal">{a.equipo}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{a.lab}</td>
+                  <td className="px-4 py-3 text-navy">{a.problema}</td>
+                  <td className="px-4 py-3"><StatusBadge status={a.prioridad} /></td>
+                  <td className="px-4 py-3"><StatusBadge status={a.estado} /></td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setVerAsig(a)}><Eye className="mr-1 size-3" /> Ver</Button>
+                      <Button size="sm" className="bg-teal hover:bg-teal/90" onClick={() => setResolverAsig(a)}><Wrench className="mr-1 size-3" /> Resolver</Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {misAsignadas.length === 0 && (
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">Sin incidencias asignadas a tu cuenta</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      <Panel title={
+        <span className="flex items-center gap-2"><Activity className="size-4 text-warning" /> Incidencias activas - todos los roles ({reportes.length})</span> as unknown as string
+      }>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Fecha</th>
+                <th className="px-4 py-3 font-semibold">Reportada por</th>
+                <th className="px-4 py-3 font-semibold">Título</th>
+                <th className="px-4 py-3 font-semibold">Lab</th>
+                <th className="px-4 py-3 font-semibold">Categoría</th>
+                <th className="px-4 py-3 font-semibold">Prioridad</th>
+                <th className="px-4 py-3 font-semibold">Estado</th>
+                <th className="px-4 py-3 font-semibold text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reportes.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-3 text-muted-foreground">{r.fecha}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.pasante}</td>
+                  <td className="px-4 py-3 font-medium text-navy">{r.titulo}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.laboratorio}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.categoria}</td>
+                  <td className="px-4 py-3"><StatusBadge status={r.prioridad} /></td>
+                  <td className="px-4 py-3"><StatusBadge status={r.estado} /></td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setVerRep(r)}><Eye className="mr-1 size-3" /> Ver</Button>
+                      <Button size="sm" className="bg-teal hover:bg-teal/90" onClick={() => setResolverRep(r)}><Wrench className="mr-1 size-3" /> Resolver</Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {reportes.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">Sin incidencias activas</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      {/* Ver asignación */}
+      <Modal open={!!verAsig} onOpenChange={(v) => !v && setVerAsig(null)} title={`Detalle — ${verAsig?.equipo ?? ""}`}
+        footer={<Button onClick={() => setVerAsig(null)}>Cerrar</Button>}>
+        {verAsig && (
+          <div className="space-y-3 text-sm">
+            <DataRow k="Equipo" v={verAsig.equipo} />
+            <DataRow k="Laboratorio" v={verAsig.lab} />
+            <DataRow k="Asignado a" v={`@${verAsig.asignadoA}`} />
+            <DataRow k="Fecha" v={verAsig.fecha} />
+            <DataRow k="Prioridad" v={<StatusBadge status={verAsig.prioridad} />} />
+            <DataRow k="Estado" v={<StatusBadge status={verAsig.estado} />} />
+            <div><p className="text-xs font-semibold text-muted-foreground">Problema</p><p className="mt-1 rounded-md bg-slate-50 p-3 text-sm">{verAsig.problema}</p></div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Resolver asignación */}
+      <ResolverAsignacionModal asig={resolverAsig} onClose={() => setResolverAsig(null)} />
+
+      {/* Ver reporte */}
+      <Modal open={!!verRep} onOpenChange={(v) => !v && setVerRep(null)} title={verRep?.titulo ?? "Detalle"}
+        footer={<Button onClick={() => setVerRep(null)}>Cerrar</Button>}>
+        {verRep && (
+          <div className="space-y-3 text-sm">
+            <DataRow k="Reportada por" v={verRep.pasante} />
+            <DataRow k="Laboratorio" v={`${verRep.laboratorio} · ${verRep.ubicacion}`} />
+            <DataRow k="Categoría" v={verRep.categoria} />
+            <DataRow k="Prioridad" v={<StatusBadge status={verRep.prioridad} />} />
+            <DataRow k="Estado" v={<StatusBadge status={verRep.estado} />} />
+            <DataRow k="Fecha" v={verRep.fecha} />
+            <div><p className="text-xs font-semibold text-muted-foreground">Descripción</p><p className="mt-1 rounded-md bg-slate-50 p-3">{verRep.descripcion}</p></div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Resolver reporte */}
+      <ResolverReporteModal rep={resolverRep} onClose={() => setResolverRep(null)} />
+    </div>
+  );
+}
+
+function DataRow({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+      <span className="text-xs font-semibold text-muted-foreground">{k}</span>
+      <span className="text-sm font-bold text-navy">{v}</span>
+    </div>
+  );
+}
+
+function ResolverAsignacionModal({ asig, onClose }: { asig: Asignacion | null; onClose: () => void }) {
+  const [estado, setEstado] = useState<EstadoIncidencia>("En proceso");
+  const [detalle, setDetalle] = useState("");
+
+  const submit = () => {
+    if (!asig) return;
+    if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
+    store.updateAsignacion(asig.id, { estado });
+    toast.success(`Incidencia marcada como ${estado}`);
+    setDetalle(""); setEstado("En proceso"); onClose();
+  };
+
+  return (
+    <Modal open={!!asig} onOpenChange={(v) => !v && onClose()} title={`Resolver — ${asig?.equipo ?? ""}`}
+      footer={<><Button variant="outline" onClick={onClose}>Cancelar</Button><Button className="bg-navy" onClick={submit}>Guardar resolución</Button></>}>
+      {asig && (
+        <div className="space-y-4">
+          <div className="rounded-md bg-slate-50 p-3 text-sm">
+            <p className="font-semibold text-navy">{asig.equipo} · {asig.lab}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{asig.problema}</p>
+          </div>
+          <FormField label="Cambiar estado" required>
+            <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoIncidencia)} className={inputCls} aria-label="Cambiar estado">
+              <option>Pendiente</option><option>En proceso</option><option>Completado</option>
+            </select>
+          </FormField>
+          <FormField label="Detalle de la acción / resolución" required>
+            <textarea rows={4} value={detalle} onChange={(e) => setDetalle(e.target.value)} className={inputCls} placeholder="Describe la acción realizada, repuestos usados, observaciones..." aria-label="Detalle de la acción" />
+          </FormField>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function ResolverReporteModal({ rep, onClose }: { rep: ReportePasante | null; onClose: () => void }) {
+  const [estado, setEstado] = useState<"Visto" | "Resuelto">("Visto");
+  const [detalle, setDetalle] = useState("");
+
+  const submit = () => {
+    if (!rep) return;
+    if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
+    store.updateReportePasante(rep.id, { estado });
+    toast.success(`Incidencia marcada como ${estado}`);
+    setDetalle(""); setEstado("Visto"); onClose();
+  };
+
+  return (
+    <Modal open={!!rep} onOpenChange={(v) => !v && onClose()} title={`Resolver — ${rep?.titulo ?? ""}`}
+      footer={<><Button variant="outline" onClick={onClose}>Cancelar</Button><Button className="bg-navy" onClick={submit}>Guardar resolución</Button></>}>
+      {rep && (
+        <div className="space-y-4">
+          <div className="rounded-md bg-slate-50 p-3 text-sm">
+            <p className="font-semibold text-navy">{rep.titulo} · {rep.laboratorio}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{rep.descripcion}</p>
+          </div>
+          <FormField label="Cambiar estado" required>
+            <select value={estado} onChange={(e) => setEstado(e.target.value as "Visto" | "Resuelto")} className={inputCls} aria-label="Cambiar estado">
+              <option>Visto</option><option>Resuelto</option>
+            </select>
+          </FormField>
+          <FormField label="Detalle de la acción" required>
+            <textarea rows={4} value={detalle} onChange={(e) => setDetalle(e.target.value)} className={inputCls} placeholder="Acciones tomadas, hallazgos, recomendaciones..." aria-label="Detalle de la acción" />
+          </FormField>
+        </div>
+      )}
+    </Modal>
+  );
+}
