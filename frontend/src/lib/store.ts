@@ -1,6 +1,7 @@
 // Reactive in-memory store for SIGMALAB
 import { useEffect, useState } from "react";
 import apiClient from "@/services/apiClient";
+import { auth, getSessionUsername } from "./auth";
 import {
   LABORATORIOS as L0,
   EQUIPOS as E0,
@@ -345,13 +346,18 @@ function inferMeta(accion: string, detalle: string) {
   return { modulo, entidad, tipoAccion, equipo: eqMatch };
 }
 
+function currentUser() {
+  const session = auth.getSession();
+  return getSessionUsername(session) || "sistema";
+}
+
 function log(usuario: string, accion: string, detalle: string, extra?: Partial<LogEntry>) {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const ts = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   const meta = inferMeta(accion, detalle);
   const entry: LogEntry = {
-    ts, usuario, accion, detalle,
+    ts, usuario: usuario || currentUser(), accion, detalle,
     modulo: meta.modulo,
     entidad: meta.entidad,
     equipo: meta.equipo,
@@ -370,26 +376,26 @@ export const store = {
     return () => listeners.delete(fn);
   },
   // Labs
-  addLab: (l: Laboratorio) => { state.labs = [...state.labs, l]; log("rescobar", "Laboratorio creado", l.nombre); notify(); },
+  addLab: (l: Laboratorio) => { state.labs = [...state.labs, l]; log("", "Laboratorio creado", l.nombre); notify(); },
   updateLab: (id: string, patch: Partial<Laboratorio>) => {
     state.labs = state.labs.map((l) => l.id === id ? { ...l, ...patch } : l);
-    log("rescobar", "Laboratorio editado", id); notify();
+    log("", "Laboratorio editado", id); notify();
   },
-  deleteLab: (id: string) => { state.labs = state.labs.filter((l) => l.id !== id); log("rescobar", "Laboratorio eliminado", id); notify(); },
+  deleteLab: (id: string) => { state.labs = state.labs.filter((l) => l.id !== id); log("", "Laboratorio eliminado", id); notify(); },
   // Equipos
-  addEquipo: (e: Equipo) => { state.equipos = [...state.equipos, e]; log("rescobar", "Equipo registrado", e.codigo); notify(); },
+  addEquipo: (e: Equipo) => { state.equipos = [...state.equipos, e]; log("", "Equipo registrado", e.codigo); notify(); },
   updateEquipo: (codigo: string, patch: Partial<Equipo>) => {
     state.equipos = state.equipos.map((e) => e.codigo === codigo ? { ...e, ...patch } : e);
-    log("rescobar", "Equipo actualizado", codigo); notify();
+    log("", "Equipo actualizado", codigo); notify();
   },
-  deleteEquipo: (codigo: string) => { state.equipos = state.equipos.filter((e) => e.codigo !== codigo); log("rescobar", "Equipo eliminado", codigo); notify(); },
+  deleteEquipo: (codigo: string) => { state.equipos = state.equipos.filter((e) => e.codigo !== codigo); log("", "Equipo eliminado", codigo); notify(); },
   // Usuarios
-  addUsuario: (u: Usuario) => { state.usuarios = [...state.usuarios, u]; log("rescobar", "Usuario creado", u.username); notify(); },
+  addUsuario: (u: Usuario) => { state.usuarios = [...state.usuarios, u]; log("", "Usuario creado", u.username); notify(); },
   updateUsuario: (username: string, patch: Partial<Usuario>) => {
     state.usuarios = state.usuarios.map((u) => u.username === username ? { ...u, ...patch } : u);
-    log("rescobar", "Usuario editado", username); notify();
+    log("", "Usuario editado", username); notify();
   },
-  deleteUsuario: (username: string) => { state.usuarios = state.usuarios.filter((u) => u.username !== username); log("rescobar", "Usuario eliminado", username); notify(); },
+  deleteUsuario: (username: string) => { state.usuarios = state.usuarios.filter((u) => u.username !== username); log("", "Usuario eliminado", username); notify(); },
   // Mantenimientos
   addMantPrev: (m: MantPrev, detalle?: Partial<MantDetalle>) => {
     state.misPrev = [m, ...state.misPrev];
@@ -400,7 +406,7 @@ export const store = {
       fecha: m.fecha, inicio: m.inicio, fin: m.fin, estado: m.estado,
       ...detalle,
     }, ...state.detalles];
-    log("ysarzuri", "Mantenimiento preventivo", m.codigo);
+    log("", "Mantenimiento preventivo", m.codigo);
     notify();
     return id;
   },
@@ -409,7 +415,7 @@ export const store = {
     if (detallePatch) {
       state.detalles = state.detalles.map((d) => (d.equipo === orig.codigo && d.fecha === orig.fecha) ? { ...d, ...detallePatch, estado: patch.estado ?? d.estado } : d);
     }
-    log("ysarzuri", "Mantenimiento actualizado", orig.codigo);
+    log("", "Mantenimiento actualizado", orig.codigo);
     notify();
   },
   addCorrectivo: (h: HistCorrectivo, equipoCodigo: string, nuevoEstado: string, detalle?: Partial<MantDetalle>) => {
@@ -425,14 +431,14 @@ export const store = {
       fecha: h.fecha, estado: h.estado, descripcion: h.problema, accion: h.accion,
       ...detalle,
     }, ...state.detalles];
-    log("jarias", "Correctivo registrado", h.equipo);
+    log("", "Correctivo registrado", h.equipo);
     notify();
     return id;
   },
   resolverProblema: (codigo: string) => {
     state.equiposProblemas = state.equiposProblemas.filter((e) => e.codigo !== codigo);
     state.equipos = state.equipos.map((e) => e.codigo === codigo ? { ...e, estado: "Funcionando" } : e);
-    log("jarias", "Equipo atendido", codigo);
+    log("", "Equipo atendido", codigo);
     notify();
   },
   // Insumos
@@ -440,14 +446,14 @@ export const store = {
     state.insumos = state.insumos.map((i) => i.nombre === nombre ? { ...i, ...patch } : i);
     notify();
   },
-  addInsumo: (i: InsumoStock) => { state.insumos = [...state.insumos, i]; log("rescobar", "Insumo creado", i.nombre); notify(); },
-  deleteInsumo: (nombre: string) => { state.insumos = state.insumos.filter((x) => x.nombre !== nombre); log("rescobar", "Insumo eliminado", nombre); notify(); },
+  addInsumo: (i: InsumoStock) => { state.insumos = [...state.insumos, i]; log("", "Insumo creado", i.nombre); notify(); },
+  deleteInsumo: (nombre: string) => { state.insumos = state.insumos.filter((x) => x.nombre !== nombre); log("", "Insumo eliminado", nombre); notify(); },
   // Perifericos
-  addPeriferico: (p: Periferico) => { state.perifericos = [...state.perifericos, p]; log("rescobar", "Periférico registrado", p.id); notify(); },
-  deletePeriferico: (id: string) => { state.perifericos = state.perifericos.filter((p) => p.id !== id); log("rescobar", "Periférico eliminado", id); notify(); },
+  addPeriferico: (p: Periferico) => { state.perifericos = [...state.perifericos, p]; log("", "Periférico registrado", p.id); notify(); },
+  deletePeriferico: (id: string) => { state.perifericos = state.perifericos.filter((p) => p.id !== id); log("", "Periférico eliminado", id); notify(); },
   updatePeriferico: (id: string, patch: Partial<Periferico>) => {
     state.perifericos = state.perifericos.map((p) => p.id === id ? { ...p, ...patch } : p);
-    log("rescobar", "Periférico editado", id); notify();
+    log("", "Periférico editado", id); notify();
   },
   // Detalles de mantenimiento
   addDetalle: (d: MantDetalle) => { state.detalles = [d, ...state.detalles]; notify(); },
@@ -458,7 +464,7 @@ export const store = {
   // Asignaciones
   addAsignacion: (a: Asignacion) => {
     state.asignaciones = [a, ...state.asignaciones];
-    log("rescobar", "Equipo asignado", `${a.equipo} → @${a.asignadoA}`);
+    log("", "Equipo asignado", `${a.equipo} → @${a.asignadoA}`);
     notify();
   },
   updateAsignacion: (id: string, patch: Partial<Asignacion>) => {
@@ -478,17 +484,17 @@ export const store = {
   // Inventario
   addInventario: (it: InventarioItem) => {
     state.inventario = [it, ...state.inventario];
-    log("rescobar", "Inventario: ítem registrado", `${it.categoria} ${it.codItic}`);
+    log("", "Inventario: ítem registrado", `${it.categoria} ${it.codItic}`);
     notify();
   },
   updateInventario: (id: string, patch: Partial<InventarioItem>) => {
     state.inventario = state.inventario.map((i) => i.id === id ? { ...i, ...patch } : i);
-    log("rescobar", "Inventario: ítem editado", id);
+    log("", "Inventario: ítem editado", id);
     notify();
   },
   deleteInventario: (id: string) => {
     state.inventario = state.inventario.filter((i) => i.id !== id);
-    log("rescobar", "Inventario: ítem eliminado", id);
+    log("", "Inventario: ítem eliminado", id);
     notify();
   },
   setStockMinimo: (categoria: InventarioCategoria, minimo: number) => {
@@ -496,7 +502,7 @@ export const store = {
     state.stockMinimos = exists
       ? state.stockMinimos.map((s) => s.categoria === categoria ? { ...s, minimo } : s)
       : [...state.stockMinimos, { categoria, minimo }];
-    log("rescobar", "Stock mínimo actualizado", `${categoria}: ${minimo}`);
+    log("", "Stock mínimo actualizado", `${categoria}: ${minimo}`);
     notify();
   },
   // Correctivo: actualizar registro existente (por clave equipo+fecha+tecnico)
@@ -515,7 +521,7 @@ export const store = {
           ? { ...d, ...detallePatch, estado: patchHist.estado ?? d.estado } : d,
       );
     }
-    log(key.tecnico === "Jhonny Arias" ? "jarias" : "user", "Correctivo actualizado", key.equipo);
+    log("", "Correctivo actualizado", key.equipo);
     notify();
   },
 };

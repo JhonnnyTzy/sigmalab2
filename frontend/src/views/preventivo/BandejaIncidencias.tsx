@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/sigmalab/StatusBadge";
 import { Modal, FormField, inputCls } from "@/components/sigmalab/Modal";
 import { Button } from "@/components/ui/button";
 import { store, useStore, type Asignacion, type ReportePasante } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
+import { useAuth, getSessionUsername } from "@/lib/auth";
 
 type EstadoIncidencia = "Pendiente" | "En proceso" | "Completado";
 
@@ -15,8 +15,7 @@ export function BandejaPreventivoView() {
   const asignaciones = useStore((s) => s.asignaciones);
   const reportes = useStore((s) => s.reportesPasante);
 
-  // "ysarzuri" es el username demo del pasante preventivo
-  const myKey = user?.id === "u-prev" ? "ysarzuri" : user?.id ?? "";
+  const myKey = getSessionUsername(user);
   const misAsignadas = asignaciones.filter((a) => a.asignadoA === myKey);
 
   const [verAsig, setVerAsig] = useState<Asignacion | null>(null);

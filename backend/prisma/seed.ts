@@ -172,38 +172,6 @@ async function main() {
     { id: "INV-0012", categoriaId: "cooler",       codigoItic: "ITIC-COL-0001", numeroSerie: "CM-HYPER-7", marca: "Cooler Master", modelo: "Hyper 212",  estado: "En almacén",  fechaIngreso: new Date("2025-02-18") },
   ]});
 
-  // ─── MATERIAS (Carrera de Informática UMSA) ─────────────────────
-  await prisma.materia.createMany({ skipDuplicates: true, data: [
-    { codigo: "INF-111", nombre: "Introducción a la Informática", sigla: "INF-111", nivel: 1, horasTeoricas: 4, horasPracticas: 2 },
-    { codigo: "INF-112", nombre: "Matemática Discreta",           sigla: "INF-112", nivel: 1, horasTeoricas: 4, horasPracticas: 2 },
-    { codigo: "INF-121", nombre: "Programación I",               sigla: "INF-121", nivel: 2, horasTeoricas: 3, horasPracticas: 4 },
-    { codigo: "INF-211", nombre: "Estructuras de Datos",         sigla: "INF-211", nivel: 3, horasTeoricas: 3, horasPracticas: 4 },
-    { codigo: "INF-212", nombre: "Base de Datos I",              sigla: "INF-212", nivel: 3, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-221", nombre: "Programación II",              sigla: "INF-221", nivel: 4, horasTeoricas: 3, horasPracticas: 4 },
-    { codigo: "INF-222", nombre: "Arquitectura de Computadoras", sigla: "INF-222", nivel: 4, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-311", nombre: "Redes de Computadoras",        sigla: "INF-311", nivel: 5, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-321", nombre: "Sistemas Operativos",          sigla: "INF-321", nivel: 6, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-322", nombre: "Base de Datos II",             sigla: "INF-322", nivel: 6, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-411", nombre: "Inteligencia Artificial",      sigla: "INF-411", nivel: 7, horasTeoricas: 3, horasPracticas: 3 },
-    { codigo: "INF-421", nombre: "Proyecto de Grado I",          sigla: "INF-421", nivel: 8, horasTeoricas: 2, horasPracticas: 4 },
-  ]});
-
-  // ─── GRUPOS Y HORARIOS ─────────────────────────────────────────
-  await prisma.grupo.createMany({ skipDuplicates: true, data: [
-    { id: "G-INF121-A", materiaCodigo: "INF-121", numeroGrupo: "A", gestion: 2026, periodo: "1-2026", docenteId: "P-DOC-001", cupoMaximo: 40 },
-    { id: "G-INF121-B", materiaCodigo: "INF-121", numeroGrupo: "B", gestion: 2026, periodo: "1-2026", docenteId: "P-DOC-001", cupoMaximo: 35 },
-    { id: "G-INF211-A", materiaCodigo: "INF-211", numeroGrupo: "A", gestion: 2026, periodo: "1-2026", docenteId: "P-DOC-002", cupoMaximo: 40 },
-    { id: "G-INF212-A", materiaCodigo: "INF-212", numeroGrupo: "A", gestion: 2026, periodo: "1-2026", docenteId: "P-DOC-003", cupoMaximo: 35 },
-    { id: "G-INF321-A", materiaCodigo: "INF-321", numeroGrupo: "A", gestion: 2026, periodo: "1-2026", docenteId: "P-DOC-005", cupoMaximo: 30 },
-  ]});
-
-  await prisma.inscripcion.createMany({ skipDuplicates: true, data: [
-    { id: "INS-001", personaId: "P-EST-001", grupoId: "G-INF121-A", fechaInscripcion: new Date("2026-02-10") },
-    { id: "INS-002", personaId: "P-EST-002", grupoId: "G-INF121-A", fechaInscripcion: new Date("2026-02-10") },
-    { id: "INS-003", personaId: "P-EST-003", grupoId: "G-INF121-B", fechaInscripcion: new Date("2026-02-11") },
-    { id: "INS-004", personaId: "P-EST-001", grupoId: "G-INF211-A", fechaInscripcion: new Date("2026-02-12") },
-    { id: "INS-005", personaId: "P-EST-002", grupoId: "G-INF212-A", fechaInscripcion: new Date("2026-02-12") },
-  ]});
 
   console.log("✅ Seed completado");
 }

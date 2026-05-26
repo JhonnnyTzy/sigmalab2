@@ -4,6 +4,7 @@ import { Panel } from "@/components/sigmalab/Panel";
 import { MetricCard } from "@/components/sigmalab/MetricCard";
 import { useStore } from "@/lib/store";
 import { useApp } from "@/lib/use-app";
+import { useAuth, getSessionFullName, getSessionUsername } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { CorrectivoCharts } from "./CorrectivoCharts";
 
@@ -18,13 +19,16 @@ function parseFecha(f: string): Date | null {
 const norm = (e: string) => (e === "Resuelto" || e === "Completado") ? "Completado" : e === "En proceso" ? "En proceso" : "Pendiente";
 
 export function CorrectivoDashboard() {
+  const { user } = useAuth();
   const { setView } = useApp();
   const histCorrectivos = useStore((s) => s.histCorrectivos);
   const asignaciones = useStore((s) => s.asignaciones);
   const [intervalo, setIntervalo] = useState<Intervalo>("mes");
 
-  const misHist = useMemo(() => histCorrectivos.filter((h) => h.tecnico === "Jhonny Arias"), [histCorrectivos]);
-  const misAsignaciones = asignaciones.filter((a) => a.asignadoA === "jarias");
+  const tecnicoName = getSessionFullName(user);
+  const username = getSessionUsername(user);
+  const misHist = useMemo(() => histCorrectivos.filter((h) => h.tecnico === tecnicoName), [histCorrectivos, tecnicoName]);
+  const misAsignaciones = asignaciones.filter((a) => a.asignadoA === username);
   const pendientes = misAsignaciones.filter((a) => a.estado === "Pendiente").length;
   const enProceso = misAsignaciones.filter((a) => a.estado === "En proceso").length;
   const completados = misHist.filter((h) => norm(h.estado) === "Completado").length;
@@ -68,7 +72,7 @@ export function CorrectivoDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-navy">Buenos días, Jhonny</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-navy">Buenos días, {getSessionFullName(user)}</h1>
         <p className="text-sm text-muted-foreground">ITIC Laboratorios · Pasante Correctivo</p>
       </div>
 

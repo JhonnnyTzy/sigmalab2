@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MantDetalleModal } from "@/components/sigmalab/MantDetalleModal";
 import { INSUMOS, COMPONENTES_AFECTADOS } from "@/lib/sigmalab-data";
 import { store, useStore, correctivoPrefill, type MantDetalle, type CorrectivoPrefill } from "@/lib/store";
+import { useAuth, getSessionFullName, getSessionUsername } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const PROBLEMAS_COMUNES = [
@@ -22,6 +23,7 @@ const PROBLEMAS_COMUNES = [
 ];
 
 export function NuevoCorrectivoView() {
+  const { user } = useAuth();
   const labs = useStore((s) => s.labs);
   const equipos = useStore((s) => s.equipos);
   const detalles = useStore((s) => s.detalles);
@@ -35,8 +37,10 @@ export function NuevoCorrectivoView() {
   }
   const p = prefRef.current;
 
+  const tecnicoFullName = getSessionFullName(user);
+  const username = getSessionUsername(user);
   const [editKey, setEditKey] = useState<{ equipo: string; fecha: string; tecnico: string } | null>(
-    p?.histKey ? { equipo: p.equipo!, fecha: p.fecha!, tecnico: "Jhonny Arias" } : null,
+    p?.histKey ? { equipo: p.equipo!, fecha: p.fecha!, tecnico: tecnicoFullName } : null,
   );
   const asignacionRef = useRef(p?.asignacionId ?? null);
   const sugRef = useRef<HTMLDivElement>(null);
@@ -129,7 +133,7 @@ export function NuevoCorrectivoView() {
     if (!form.equipo) { toast.error("Selecciona un equipo"); return; }
     if (!form.descripcion.trim() && form.estado !== "Pendiente") { toast.error("Agrega una descripción del problema"); return; }
     const fechaFmt = form.fecha.split("-").reverse().join("/");
-    const tecnico = "Jhonny Arias";
+    const tecnico = tecnicoFullName;
     const compFinales = form.otroComp.trim() ? [...form.componentes.filter((c: string) => c !== "Otro"), form.otroComp.trim()] : form.componentes;
     const insumosClean = form.insumos.reduce((acc: any, i: any) => {
       if (i.insumo) acc.push({ insumo: i.insumo, cantidad: "", unidad: "" });
@@ -156,7 +160,7 @@ export function NuevoCorrectivoView() {
       store.updateAsignacion(asignacionRef.current, { estado: form.estado });
       setEditKey(null); asignacionRef.current = null;
     } else {
-      const asig = asignaciones.find((a) => a.equipo === form.equipo && a.asignadoA === "jarias" && a.estado !== "Completado");
+      const asig = asignaciones.find((a) => a.equipo === form.equipo && a.asignadoA === username && a.estado !== "Completado");
       if (asig) store.updateAsignacion(asig.id, { estado: form.estado });
     }
     // limpiar

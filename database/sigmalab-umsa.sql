@@ -315,82 +315,7 @@ CREATE INDEX idx_logs_usuario ON logs(usuario_id);
 CREATE INDEX idx_logs_modulo ON logs(modulo);
 
 -- =============================================================================
--- 8. TABLAS ACADÉMICAS (Carrera de Informática UMSA)
--- =============================================================================
-
-CREATE TABLE materias (
-    codigo          VARCHAR(20)  PRIMARY KEY,
-    nombre          VARCHAR(200) NOT NULL,
-    sigla           VARCHAR(10)  NOT NULL UNIQUE,
-    nivel           SMALLINT     NOT NULL CHECK (nivel BETWEEN 1 AND 10),
-    horas_teoricas  INT          NOT NULL DEFAULT 0 CHECK (horas_teoricas >= 0),
-    horas_practicas INT          NOT NULL DEFAULT 0 CHECK (horas_practicas >= 0),
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE grupos (
-    id              VARCHAR(30)  PRIMARY KEY,
-    materia_codigo  VARCHAR(20)  NOT NULL REFERENCES materias(codigo),
-    numero_grupo    VARCHAR(5)   NOT NULL,
-    gestion         INT          NOT NULL CHECK (gestion >= 2000),
-    periodo         VARCHAR(10)  NOT NULL CHECK (periodo IN ('1-2026', '2-2026', 'Verano', 'Invierno')),
-    docente_id      VARCHAR(20)  REFERENCES personas(id),
-    cupo_maximo     INT          NOT NULL CHECK (cupo_maximo > 0),
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_grupo_materia UNIQUE (materia_codigo, numero_grupo, gestion, periodo)
-);
-
-CREATE INDEX idx_grupos_materia ON grupos(materia_codigo);
-CREATE INDEX idx_grupos_docente ON grupos(docente_id);
-
-CREATE TABLE horarios (
-    id              VARCHAR(30)  PRIMARY KEY,
-    grupo_id        VARCHAR(30)  NOT NULL REFERENCES grupos(id),
-    laboratorio_id  VARCHAR(20)  NOT NULL REFERENCES laboratorios(id),
-    dia_semana      SMALLINT     NOT NULL CHECK (dia_semana BETWEEN 1 AND 7),
-    hora_inicio     TIME         NOT NULL,
-    hora_fin        TIME         NOT NULL,
-    tipo_clase      VARCHAR(20)  NOT NULL DEFAULT 'Práctica' CHECK (tipo_clase IN ('Teoría', 'Práctica', 'Laboratorio', 'Tutorial')),
-    CONSTRAINT ck_horario CHECK (hora_fin > hora_inicio),
-    CONSTRAINT uq_horario_lab UNIQUE (laboratorio_id, dia_semana, hora_inicio)
-);
-
-CREATE INDEX idx_horarios_grupo ON horarios(grupo_id);
-CREATE INDEX idx_horarios_lab ON horarios(laboratorio_id);
-
--- =============================================================================
--- 9. TABLAS DE INSCRIPCIÓN Y USO DE LABORATORIOS
--- =============================================================================
-
-CREATE TABLE inscripciones (
-    id              VARCHAR(30)  PRIMARY KEY,
-    persona_id      VARCHAR(20)  NOT NULL REFERENCES personas(id),
-    grupo_id        VARCHAR(30)  NOT NULL REFERENCES grupos(id),
-    fecha_inscripcion DATE       NOT NULL DEFAULT CURRENT_DATE,
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_inscripcion UNIQUE (persona_id, grupo_id)
-);
-
-CREATE INDEX idx_inscripciones_persona ON inscripciones(persona_id);
-CREATE INDEX idx_inscripciones_grupo ON inscripciones(grupo_id);
-
-CREATE TABLE uso_laboratorio (
-    id              VARCHAR(30)  PRIMARY KEY,
-    laboratorio_id  VARCHAR(20)  NOT NULL REFERENCES laboratorios(id),
-    grupo_id        VARCHAR(30)  REFERENCES grupos(id),
-    persona_id      VARCHAR(20)  REFERENCES personas(id),
-    fecha           DATE         NOT NULL,
-    hora_ingreso    TIMESTAMP    NOT NULL,
-    hora_salida     TIMESTAMP,
-    motivo          VARCHAR(200),
-    created_at      TIMESTAMP    NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_uso_lab_fecha ON uso_laboratorio(fecha DESC);
-CREATE INDEX idx_uso_lab_lab ON uso_laboratorio(laboratorio_id);
-
--- =============================================================================
--- 10. FUNCIONES Y TRIGGERS
+-- 8. FUNCIONES Y TRIGGERS
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION actualizar_timestamp()
@@ -639,55 +564,7 @@ INSERT INTO perifericos (id, tipo, marca, modelo, numero_serie, equipo_codigo, l
     ('UMSA-INF-2024-107', 'Proyector', 'Epson',   'PowerLite X41+', 'EPS112233', NULL,   'LAB3', 'Funcionando'),
     ('UMSA-INF-2024-108', 'Switch',    'TP-Link', 'TL-SG1024', 'TPL778899', NULL,         'LASIN1', 'Funcionando');
 
--- =============================================================================
--- 15. INSERCIONES — MATERIAS (Carrera de Informática UMSA)
--- =============================================================================
 
-INSERT INTO materias (codigo, nombre, sigla, nivel, horas_teoricas, horas_practicas) VALUES
-    ('INF-111', 'Introducción a la Informática',           'INF-111', 1, 4, 2),
-    ('INF-112', 'Matemática Discreta',                     'INF-112', 1, 4, 2),
-    ('INF-121', 'Programación I',                          'INF-121', 2, 3, 4),
-    ('INF-122', 'Álgebra Lineal',                          'INF-122', 2, 4, 2),
-    ('INF-211', 'Estructuras de Datos',                    'INF-211', 3, 3, 4),
-    ('INF-212', 'Base de Datos I',                         'INF-212', 3, 3, 3),
-    ('INF-221', 'Programación II',                         'INF-221', 4, 3, 4),
-    ('INF-222', 'Arquitectura de Computadoras',            'INF-222', 4, 3, 3),
-    ('INF-311', 'Redes de Computadoras',                   'INF-311', 5, 3, 3),
-    ('INF-312', 'Ingeniería de Software',                  'INF-312', 5, 4, 2),
-    ('INF-321', 'Sistemas Operativos',                     'INF-321', 6, 3, 3),
-    ('INF-322', 'Base de Datos II',                        'INF-322', 6, 3, 3),
-    ('INF-411', 'Inteligencia Artificial',                 'INF-411', 7, 3, 3),
-    ('INF-412', 'Taller de Sistemas de Información',       'INF-412', 7, 2, 4),
-    ('INF-421', 'Proyecto de Grado I',                     'INF-421', 8, 2, 4),
-    ('INF-422', 'Ética y Legislación Informática',          'INF-422', 8, 3, 0);
-
--- =============================================================================
--- 16. INSERCIONES — GRUPOS Y HORARIOS
--- =============================================================================
-
-INSERT INTO grupos (id, materia_codigo, numero_grupo, gestion, periodo, docente_id, cupo_maximo) VALUES
-    ('G-INF121-A', 'INF-121', 'A', 2026, '1-2026', 'P-DOC-001', 40),
-    ('G-INF121-B', 'INF-121', 'B', 2026, '1-2026', 'P-DOC-001', 35),
-    ('G-INF211-A', 'INF-211', 'A', 2026, '1-2026', 'P-DOC-002', 40),
-    ('G-INF212-A', 'INF-212', 'A', 2026, '1-2026', 'P-DOC-003', 35),
-    ('G-INF221-A', 'INF-221', 'A', 2026, '1-2026', 'P-DOC-004', 35),
-    ('G-INF311-A', 'INF-311', 'A', 2026, '1-2026', 'P-DOC-005', 30),
-    ('G-INF312-A', 'INF-312', 'A', 2026, '1-2026', 'P-DOC-002', 35),
-    ('G-INF321-A', 'INF-321', 'A', 2026, '1-2026', 'P-DOC-005', 30);
-
-INSERT INTO horarios (id, grupo_id, laboratorio_id, dia_semana, hora_inicio, hora_fin, tipo_clase) VALUES
-    ('H-INF121-A-L1', 'G-INF121-A', 'LAB1', 2, '08:30', '10:00', 'Práctica'),    -- Martes
-    ('H-INF121-A-L2', 'G-INF121-A', 'LAB1', 4, '08:30', '10:00', 'Práctica'),    -- Jueves
-    ('H-INF121-B-L1', 'G-INF121-B', 'LAB2', 2, '10:15', '11:45', 'Práctica'),
-    ('H-INF121-B-L2', 'G-INF121-B', 'LAB2', 4, '10:15', '11:45', 'Práctica'),
-    ('H-INF211-A-L1', 'G-INF211-A', 'LAB3', 1, '14:00', '15:30', 'Práctica'),    -- Lunes
-    ('H-INF211-A-L2', 'G-INF211-A', 'LAB3', 3, '14:00', '15:30', 'Práctica'),    -- Miércoles
-    ('H-INF212-A-L1', 'G-INF212-A', 'LASIN1', 2, '14:00', '15:30', 'Práctica'),
-    ('H-INF212-A-L2', 'G-INF212-A', 'LASIN1', 4, '14:00', '15:30', 'Práctica'),
-    ('H-INF221-A-L1', 'G-INF221-A', 'LAB4', 3, '08:30', '10:00', 'Práctica'),
-    ('H-INF221-A-L2', 'G-INF221-A', 'LAB4', 5, '08:30', '10:00', 'Práctica'),    -- Viernes
-    ('H-INF311-A-L1', 'G-INF311-A', 'LASIN2', 1, '10:15', '11:45', 'Práctica'),
-    ('H-INF321-A-L1', 'G-INF321-A', 'LASIN3', 5, '14:00', '15:30', 'Práctica');
 
 -- =============================================================================
 -- 17. INSERCIONES — INSUMOS
@@ -865,18 +742,7 @@ INSERT INTO logs (id, timestamp, usuario_id, accion, detalle, modulo, entidad, e
     ('LOG-007', '2026-04-18 16:45:00', 'u-admin','Reporte de pasante resuelto','Stock bajo de pasta térmica',   'Incidencias',    'Reporte de pasante',        NULL,          'Resolver', 'Éxito');
 
 -- =============================================================================
--- 24. INSERCIONES — INSCRIPCIONES (estudiantes en grupos)
--- =============================================================================
-
-INSERT INTO inscripciones (id, persona_id, grupo_id, fecha_inscripcion) VALUES
-    ('INS-001', 'P-EST-001', 'G-INF121-A', '2026-02-10'),
-    ('INS-002', 'P-EST-002', 'G-INF121-A', '2026-02-10'),
-    ('INS-003', 'P-EST-003', 'G-INF121-B', '2026-02-11'),
-    ('INS-004', 'P-EST-001', 'G-INF211-A', '2026-02-12'),
-    ('INS-005', 'P-EST-002', 'G-INF212-A', '2026-02-12');
-
--- =============================================================================
--- 25. CONSULTAS DE VERIFICACIÓN
+-- 24. CONSULTAS DE VERIFICACIÓN
 -- =============================================================================
 
 -- Verificar integridad referencial: equipos por laboratorio
@@ -903,12 +769,3 @@ FROM categorias_inventario ci
 LEFT JOIN inventario inv ON inv.categoria_id = ci.id AND inv.estado != 'De baja'
 GROUP BY ci.nombre, ci.stock_minimo
 HAVING COUNT(inv.id) <= ci.stock_minimo;
-
--- Horarios de laboratorios
-SELECT h.dia_semana, h.hora_inicio, h.hora_fin, l.nombre AS laboratorio,
-       m.sigla, m.nombre AS materia, g.numero_grupo
-FROM horarios h
-JOIN laboratorios l ON l.id = h.laboratorio_id
-JOIN grupos g ON g.id = h.grupo_id
-JOIN materias m ON m.codigo = g.materia_codigo
-ORDER BY h.dia_semana, h.hora_inicio;

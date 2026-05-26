@@ -10,9 +10,6 @@ import perifericoRoutes from "./perifericoRoutes";
 import asignacionRoutes from "./asignacionRoutes";
 import reporteRoutes from "./reporteRoutes";
 import logRoutes from "./logRoutes";
-import materiaRoutes from "./materiaRoutes";
-import horarioRoutes from "./horarioRoutes";
-
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -26,7 +23,5 @@ router.use("/perifericos", perifericoRoutes);
 router.use("/asignaciones", asignacionRoutes);
 router.use("/reportes", reporteRoutes);
 router.use("/logs", logRoutes);
-router.use("/materias", materiaRoutes);
-router.use("/horarios", horarioRoutes);
 
 export default router;

@@ -7,9 +7,11 @@ import { MetricCard } from "@/components/sigmalab/MetricCard";
 import { MantDetalleModal } from "@/components/sigmalab/MantDetalleModal";
 import { useStore, type MantDetalle } from "@/lib/store";
 import { useApp } from "@/lib/use-app";
+import { useAuth, getSessionFullName } from "@/lib/auth";
 import { PreventivoCharts } from "./PreventivoCharts";
 
 export function PreventivoDashboard() {
+  const { user } = useAuth();
   const misPrev = useStore((s) => s.misPrev);
   const detalles = useStore((s) => s.detalles);
   const { setView } = useApp();
@@ -42,7 +44,7 @@ export function PreventivoDashboard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-navy">Buenos días, Yennifer</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-navy">Buenos días, {getSessionFullName(user)}</h1>
           <p className="text-sm text-muted-foreground">ITIC Laboratorios · Pasante Preventivo</p>
         </div>
         <div className="flex gap-2">

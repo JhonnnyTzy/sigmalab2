@@ -6,6 +6,7 @@ import { MetricCard } from "@/components/sigmalab/MetricCard";
 import { MantDetalleModal } from "@/components/sigmalab/MantDetalleModal";
 import { useStore, correctivoPrefill, type MantDetalle, type HistCorrectivo } from "@/lib/store";
 import { useApp } from "@/lib/use-app";
+import { useAuth, getSessionFullName } from "@/lib/auth";
 
 const ESTADOS_FILTRO = ["Completado", "En proceso", "Pendiente"];
 
@@ -16,6 +17,7 @@ const norm = (e: string): "Completado" | "En proceso" | "Pendiente" => {
 };
 
 export function MisCorrectivosView() {
+  const { user } = useAuth();
   const hist = useStore((s) => s.histCorrectivos);
   const detalles = useStore((s) => s.detalles);
   const equipos = useStore((s) => s.equipos);
@@ -25,7 +27,8 @@ export function MisCorrectivosView() {
   const [detSel, setDetSel] = useState<MantDetalle | null>(null);
 
   // Sólo mis mantenimientos
-  const mios = useMemo(() => hist.filter((h) => h.tecnico === "Jhonny Arias"), [hist]);
+  const tecnicoName = getSessionFullName(user);
+  const mios = useMemo(() => hist.filter((h) => h.tecnico === tecnicoName), [hist, tecnicoName]);
 
   const filtered = useMemo(() => mios.filter((h) =>
     (!q || h.equipo.toLowerCase().includes(q.toLowerCase()) || h.problema.toLowerCase().includes(q.toLowerCase()))

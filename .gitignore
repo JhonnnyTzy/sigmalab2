@@ -31,6 +31,18 @@ dist-ssr
 *.sln
 *.sw?
 
+# Vite cache
+.vite/
+frontend/.vite/
+
+# Logs y outputs
+*.err
+backend/backend_output.log
+
+# Archivos temporales
+body.json
+response.txt
+
 # Backend
 backend/node_modules/
 backend/dist/

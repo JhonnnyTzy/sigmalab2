@@ -165,3 +165,20 @@ export function useIsReadOnly(): boolean {
   const { user } = useAuth();
   return user?.roleId === "invitado";
 }
+
+/** Maps session user IDs to mock data usernames for assignment filtering */
+export const USERNAME_MAP: Record<string, string> = {
+  "u-admin": "rescobar",
+  "u-corr": "jarias",
+  "u-prev": "ysarzuri",
+};
+
+export function getSessionUsername(user: SessionUser | null): string {
+  if (!user) return "";
+  return USERNAME_MAP[user.id] ?? user.id;
+}
+
+export function getSessionFullName(user: SessionUser | null): string {
+  if (!user) return "Usuario";
+  return [user.nombres, user.paterno].filter(Boolean).join(" ");
+}

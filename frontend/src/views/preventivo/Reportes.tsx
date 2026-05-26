@@ -4,6 +4,7 @@ import { Send, Inbox, CheckCircle2 } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
 import { FormField, inputCls } from "@/components/sigmalab/Modal";
 import { store, useStore } from "@/lib/store";
+import { useAuth, getSessionUsername } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const CATEGORIAS = ["Red", "Hardware", "Software", "Mobiliario", "Limpieza", "Eléctrico", "Otro"];
@@ -17,6 +18,7 @@ const EJEMPLOS = [
 ];
 
 export function ReportesPreventivoView() {
+  const { user } = useAuth();
   const labs = useStore((s) => s.labs);
   const reportes = useStore((s) => s.reportesPasante);
   const [form, dispatch] = useReducer(
@@ -33,7 +35,7 @@ export function ReportesPreventivoView() {
     if (!form.titulo.trim() || !form.descripcion.trim() || !form.laboratorio) { toast.error("Título, descripción y laboratorio son requeridos"); return; }
     store.addReportePasante({
       id: `RP-${Date.now()}`,
-      pasante: "ysarzuri",
+      pasante: getSessionUsername(user),
       titulo: form.titulo, descripcion: form.descripcion, laboratorio: form.laboratorio, ubicacion: form.ubicacion, categoria: form.categoria, prioridad: form.prioridad,
       fecha: new Date().toLocaleDateString("es-BO"),
       estado: "Nuevo",
@@ -44,7 +46,7 @@ export function ReportesPreventivoView() {
     dispatch({ type: "SET_FIELD", field: "ubicacion", value: "" });
   };
 
-  const misReportes = reportes.filter((r) => r.pasante === "ysarzuri");
+  const misReportes = reportes.filter((r) => r.pasante === getSessionUsername(user));
 
   return (
     <div className="space-y-6">

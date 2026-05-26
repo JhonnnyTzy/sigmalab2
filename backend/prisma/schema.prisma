@@ -78,15 +78,14 @@ model Persona {
   registroUniversitario String?          @unique @map("registro_universitario") @db.VarChar(20)
   email                 String?          @unique @db.VarChar(150)
   celular               String?          @db.VarChar(20)
+  fotoUrl               String?          @map("foto_url")
   activo                Boolean          @default(true)
   createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt             DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  gruposDocente         Grupo[]          @relation("DocenteGrupo")
-  incidencias           Incidencia[]
-  inscripciones         Inscripcion[]
-  laboratorios          Laboratorio[]    @relation("EncargadoLaboratorio")
-  usosLaboratorio       UsoLaboratorio[]
+
   usuario               Usuario?
+  laboratorios          Laboratorio[]    @relation("EncargadoLaboratorio")
+  incidencias           Incidencia[]
 
   @@map("personas")
 }
@@ -124,17 +123,16 @@ model Laboratorio {
   activo            Boolean          @default(true)
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  asignaciones      Asignacion[]
-  equipos           Equipo[]
-  horarios          Horario[]
-  incidencias       Incidencia[]
-  inventario        InventarioItem[]
+
   edificio          Edificio         @relation(fields: [edificioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   encargado         Persona?         @relation("EncargadoLaboratorio", fields: [encargadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  mantenimientos    Mantenimiento[]
+  equipos           Equipo[]
   perifericos       Periferico[]
+  inventario        InventarioItem[]
+  incidencias       Incidencia[]
+  mantenimientos    Mantenimiento[]
+  asignaciones      Asignacion[]
   reportes_pasante  ReportePasante[]
-  usosLaboratorio   UsoLaboratorio[]
 
   @@index([edificioId], map: "idx_laboratorios_edificio")
   @@index([encargadoId], map: "idx_laboratorios_encargado")
@@ -386,87 +384,4 @@ model Log {
   @@map("logs")
 }
 
-model Materia {
-  codigo         String  @id @db.VarChar(20)
-  nombre         String  @db.VarChar(200)
-  sigla          String  @unique @db.VarChar(10)
-  nivel          Int     @db.SmallInt
-  horasTeoricas  Int     @default(0) @map("horas_teoricas")
-  horasPracticas Int     @default(0) @map("horas_practicas")
-  activo         Boolean @default(true)
-  grupos         Grupo[]
 
-  @@map("materias")
-}
-
-model Grupo {
-  id              String           @id @db.VarChar(30)
-  materiaCodigo   String           @map("materia_codigo") @db.VarChar(20)
-  numeroGrupo     String           @map("numero_grupo") @db.VarChar(5)
-  gestion         Int
-  periodo         String           @db.VarChar(10)
-  docenteId       String?          @map("docente_id") @db.VarChar(20)
-  cupoMaximo      Int              @map("cupo_maximo")
-  activo          Boolean          @default(true)
-  docente         Persona?         @relation("DocenteGrupo", fields: [docenteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  materia         Materia          @relation(fields: [materiaCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
-  horarios        Horario[]
-  inscripciones   Inscripcion[]
-  usosLaboratorio UsoLaboratorio[]
-
-  @@unique([materiaCodigo, numeroGrupo, gestion, periodo], map: "uq_grupo_materia")
-  @@index([docenteId], map: "idx_grupos_docente")
-  @@index([materiaCodigo], map: "idx_grupos_materia")
-  @@map("grupos")
-}
-
-model Horario {
-  id            String      @id @db.VarChar(30)
-  grupoId       String      @map("grupo_id") @db.VarChar(30)
-  laboratorioId String      @map("laboratorio_id") @db.VarChar(20)
-  diaSemana     Int         @map("dia_semana") @db.SmallInt
-  horaInicio    DateTime    @map("hora_inicio") @db.Time(6)
-  horaFin       DateTime    @map("hora_fin") @db.Time(6)
-  tipoClase     String      @default("Práctica") @map("tipo_clase") @db.VarChar(20)
-  grupo         Grupo       @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([laboratorioId, diaSemana, horaInicio], map: "uq_horario_lab")
-  @@index([grupoId], map: "idx_horarios_grupo")
-  @@index([laboratorioId], map: "idx_horarios_lab")
-  @@map("horarios")
-}
-
-model Inscripcion {
-  id               String   @id @db.VarChar(30)
-  personaId        String   @map("persona_id") @db.VarChar(20)
-  grupoId          String   @map("grupo_id") @db.VarChar(30)
-  fechaInscripcion DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_inscripcion") @db.Date
-  activo           Boolean  @default(true)
-  grupo            Grupo    @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  persona          Persona  @relation(fields: [personaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([personaId, grupoId], map: "uq_inscripcion")
-  @@index([grupoId], map: "idx_inscripciones_grupo")
-  @@index([personaId], map: "idx_inscripciones_persona")
-  @@map("inscripciones")
-}
-
-model UsoLaboratorio {
-  id            String      @id @db.VarChar(30)
-  laboratorioId String      @map("laboratorio_id") @db.VarChar(20)
-  grupoId       String?     @map("grupo_id") @db.VarChar(30)
-  personaId     String?     @map("persona_id") @db.VarChar(20)
-  fecha         DateTime    @db.Date
-  horaIngreso   DateTime    @map("hora_ingreso") @db.Timestamp(6)
-  horaSalida    DateTime?   @map("hora_salida") @db.Timestamp(6)
-  motivo        String?     @db.VarChar(200)
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
-  grupo         Grupo?      @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  persona       Persona?    @relation(fields: [personaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([fecha(sort: Desc)], map: "idx_uso_lab_fecha")
-  @@index([laboratorioId], map: "idx_uso_lab_lab")
-  @@map("uso_laboratorio")
-}

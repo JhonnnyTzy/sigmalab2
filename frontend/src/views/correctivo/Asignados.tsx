@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MantDetalleModal } from "@/components/sigmalab/MantDetalleModal";
 import { store, useStore, correctivoPrefill, type Asignacion, type MantDetalle } from "@/lib/store";
 import { useApp } from "@/lib/use-app";
+import { useAuth, getSessionUsername } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const PRIO: Record<string, string> = {
@@ -16,6 +17,7 @@ const PRIO: Record<string, string> = {
 };
 
 export function AsignadosView() {
+  const { user } = useAuth();
   const asignaciones = useStore((s) => s.asignaciones);
   const detalles = useStore((s) => s.detalles);
   const histCorrectivos = useStore((s) => s.histCorrectivos);
@@ -25,8 +27,9 @@ export function AsignadosView() {
   const [detSel, setDetSel] = useState<MantDetalle | null>(null);
 
   // Solo mis asignaciones activas (Pendiente / En proceso)
+  const username = getSessionUsername(user);
   const mias = asignaciones.filter(
-    (a) => a.asignadoA === "jarias" && (a.estado === "Pendiente" || a.estado === "En proceso"),
+    (a) => a.asignadoA === username && (a.estado === "Pendiente" || a.estado === "En proceso"),
   );
 
   const histDelEquipo = (codigo: string) => {
