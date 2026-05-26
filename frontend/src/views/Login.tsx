@@ -1,7 +1,7 @@
 import { useReducer } from "react";
 import { toast } from "sonner";
 import {
-  Lock, Mail, Hash, Eye, EyeOff, ShieldCheck, Loader2, ArrowRight,
+  Lock, Mail, Hash, Eye, EyeOff, Loader2, ArrowRight,
   AlertTriangle, GraduationCap,
 } from "lucide-react";
 import { auth, ROLE_LABEL } from "@/lib/auth";
@@ -49,12 +49,8 @@ export function Login() {
     }
   };
 
-  const enviarIncidencia = () => {
-    toast.info("Para enviar una incidencia debes iniciar sesión como Docente o Estudiante.");
-  };
-
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 flex items-center justify-center">
       {/* Background - institutional gradient + soft tech orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_oklch(0.45_0.18_265/_0.18),_transparent_55%),radial-gradient(circle_at_85%_75%,_oklch(0.65_0.15_200/_0.18),_transparent_50%)]" />
@@ -70,63 +66,74 @@ export function Login() {
         />
       </div>
 
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-4 py-10">
-        <div className="grid w-full gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+      {/* Main Container - Adjusted padding to prevent scroll */}
+      <div className="w-full max-w-[68rem] px-4 py-6 md:py-8">
+        <div className="grid w-full gap-6 lg:grid-cols-2 lg:gap-8 items-stretch">
+          
           {/* Brand panel */}
-          <div className="relative hidden lg:flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-navy via-[oklch(0.28_0.12_265)] to-slate-900 p-10 text-white shadow-[0_30px_80px_-30px_rgba(30,39,97,0.55)]">
+          <div className="relative hidden lg:flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-navy via-[oklch(0.28_0.12_265)] to-slate-900 p-8 xl:p-10 text-white shadow-[0_30px_80px_-30px_rgba(30,39,97,0.55)]">
             <div className="absolute inset-0 opacity-30 mix-blend-overlay"
               style={{
                 backgroundImage:
                   "radial-gradient(circle at 20% 10%, rgba(255,255,255,.25), transparent 35%), radial-gradient(circle at 80% 90%, rgba(0,200,200,.25), transparent 40%)",
               }} />
-            <div className="relative">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
-                  <ShieldCheck className="size-6 text-teal" strokeWidth={2.2} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">ITIC · UMSA</p>
-                  <span className="text-2xl font-extrabold tracking-tight">SIGMALAB</span>
+            
+            <div className="relative flex flex-col justify-between h-full w-full z-10">
+              
+              {/* Logo & Header */}
+              <div className="flex flex-col items-center gap-2 w-full mt-2">
+                <img 
+                  src="/logosvg.png" 
+                  alt="SIGMALAB Logo" 
+                  className="w-60 h-50 xl:w-40 xl:h-40 object-contain mx-auto mb-2 invert brightness-0" 
+                />
+                <div className="flex flex-col items-center">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 text-center">ITIC · INFORMÁTICA · UMSA</p>
+                  <span className="text-2xl font-extrabold tracking-tight text-center">SIGMALAB</span>
                 </div>
               </div>
+              
+              {/* Central Text - Auto margins center it vertically */}
+              <div className="my-auto text-center">
+                <h1 className="text-2xl xl:text-3xl font-semibold leading-tight">
+                  Gestión integral del mantenimiento <span className="text-teal">de laboratorios</span>.
+                </h1>
+                <p className="mt-3 xl:mt-4 max-w-md mx-auto text-sm leading-relaxed text-white/70">
+                  Plataforma institucional de ITIC Laboratorios - Carrera de Informática - Universidad Mayor de San Andrés. Control preventivo, correctivo, inventario e incidencias en un solo lugar.
+                </p>
+              </div>
 
-              <h1 className="mt-14 text-3xl font-semibold leading-tight">
-                Gestión integral del mantenimiento <span className="text-teal">de laboratorios</span> universitarios.
-              </h1>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
-                Plataforma institucional de ITIC Laboratorios - Universidad Mayor de San Andrés. Control preventivo, correctivo, inventario e incidencias en un solo lugar.
-              </p>
-            </div>
-
-            <div className="relative mt-10 grid grid-cols-3 gap-3 text-xs">
-              {[
-                { k: "Equipos", v: "monitoreados" },
-                { k: "Incidencias", v: "en tiempo real" },
-                { k: "Reportes", v: "automáticos" },
-              ].map((s) => (
-                <div key={s.k} className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur">
-                  <p className="text-sm font-semibold text-white">{s.k}</p>
-                  <p className="text-white/60">{s.v}</p>
+              {/* Bottom Cards & Footer */}
+              <div className="flex flex-col items-center w-full mb-2">
+                <div className="grid grid-cols-3 gap-2 xl:gap-3 text-xs w-full max-w-xs mb-6">
+                  { [
+                    { k: "Equipos", v: "" },
+                    { k: "Incidencias", v: "" },
+                    { k: "Reportes", v: "" },
+                  ].map((s) => (
+                    <div key={s.k} className="rounded-xl border border-white/10 bg-white/5 p-2.5 backdrop-blur text-center">
+                      <p className="text-sm font-semibold text-white">{s.k}</p>
+                    </div>
+                  )) }
                 </div>
-              ))}
-            </div>
+                <p className="flex items-center gap-2 text-[11px] text-white/50 justify-center">
+                  <GraduationCap className="size-3.5" />
+                  Universidad Mayor de San Andrés · La Paz, Bolivia
+                </p>
+              </div>
 
-            <p className="relative mt-8 flex items-center gap-2 text-[11px] text-white/50">
-              <GraduationCap className="size-3.5" />
-              Universidad Mayor de San Andrés · La Paz, Bolivia
-            </p>
+            </div>
           </div>
 
           {/* Form card */}
-          <div className="relative">
-            <div className="rounded-3xl border border-white/60 bg-white/80 p-7 shadow-[0_25px_70px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-9">
-              <div className="mb-6 flex items-center gap-3 lg:hidden">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-navy text-white">
-                  <ShieldCheck className="size-5 text-teal" />
-                </div>
-                <div>
+          <div className="relative flex flex-col justify-center">
+            <div className="rounded-3xl border border-white/60 bg-white/80 p-6 xl:p-9 shadow-[0_25px_70px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              
+              <div className="mb-6 flex flex-col items-center gap-3 lg:hidden">
+                <img src="/logosvg.png" alt="SIGMALAB Logo" className="w-16 h-16 object-contain invert brightness-0 rounded-xl bg-navy p-2" />
+                <div className="flex flex-col items-center">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">ITIC · UMSA</p>
-                  <span className="text-lg font-extrabold text-navy">SIGMALAB</span>
+                  <span className="text-xl font-extrabold text-navy">SIGMALAB</span>
                 </div>
               </div>
 
@@ -135,7 +142,7 @@ export function Login() {
                 Ingresa tus credenciales institucionales para continuar.
               </p>
 
-              <form onSubmit={submit} className="mt-7 space-y-5" noValidate>
+              <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
                 {/* Identifier */}
                 <div>
                   <label htmlFor="login-id" className="mb-1.5 block text-xs font-semibold text-navy/80">
@@ -145,19 +152,16 @@ export function Login() {
                     form.error ? "border-danger/50" : "border-slate-200 focus-within:border-teal focus-within:ring-4 focus-within:ring-teal/15"
                   }`}>
                     <span className="pl-3.5 text-muted-foreground">
-                      {isNumeric
-                        ? <Hash className="size-4.5" />
-                        : <Mail className="size-4.5" />}
+                      {isNumeric ? <Hash className="size-4.5" /> : <Mail className="size-4.5" />}
                     </span>
                     <input id="login-id"
                       type="text"
                       inputMode={isNumeric ? "numeric" : "email"}
                       value={form.identifier}
                       onChange={(e) => { dispatch({ type: "SET_FIELD", field: "identifier", value: e.target.value }); if (form.error) dispatch({ type: "SET_FIELD", field: "error", value: "" }); }}
-                      placeholder="correo@umsa.bo  ó  20250001"
+                      placeholder="correo@umsa.bo  ó  12345678"
                       autoComplete="username"
                       className="w-full bg-transparent py-3 pl-2.5 pr-3.5 text-sm text-navy placeholder:text-slate-400 focus:outline-none"
-                      aria-label="Correo o Registro Universitario"
                     />
                   </div>
                   <p className="mt-1.5 pl-1 text-[11px] text-muted-foreground">{fieldHint}</p>
@@ -177,31 +181,21 @@ export function Login() {
                       placeholder="••••••••"
                       autoComplete="current-password"
                       className="w-full bg-transparent py-3 pl-2.5 pr-2 text-sm text-navy placeholder:text-slate-400 focus:outline-none"
-                      aria-label="Contraseña"
                     />
-                    <button
-                      type="button"
-                      onClick={() => dispatch({ type: "SET_FIELD", field: "showPass", value: !form.showPass })}
-                      className="mr-2 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-slate-100 hover:text-navy"
-                      aria-label={form.showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    >
+                    <button type="button" onClick={() => dispatch({ type: "SET_FIELD", field: "showPass", value: !form.showPass })} className="mr-2 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-slate-100 hover:text-navy">
                       {form.showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
                 </div>
 
                 {form.error && (
-                  <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-sm text-danger animate-in fade-in slide-in-from-top-1">
+                  <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                     <span>{form.error}</span>
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={form.loading}
-                  className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-navy to-[oklch(0.32_0.14_265)] py-3 text-sm font-semibold text-white shadow-lg shadow-navy/20 transition-all hover:shadow-xl hover:shadow-navy/30 active:scale-[0.99] disabled:opacity-70"
-                >
+                <button type="submit" disabled={form.loading} className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-navy to-[oklch(0.32_0.14_265)] py-3 text-sm font-semibold text-white shadow-lg shadow-navy/20 transition-all hover:shadow-xl hover:shadow-navy/30 active:scale-[0.99] disabled:opacity-70 mt-2">
                   {form.loading ? (
                     <><Loader2 className="size-4 animate-spin" /> Validando credenciales…</>
                   ) : (
@@ -209,22 +203,13 @@ export function Login() {
                   )}
                 </button>
 
-                <div className="relative py-1">
+                {/* <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
                   <div className="relative flex justify-center"><span className="bg-white/80 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">o</span></div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={enviarIncidencia}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-navy transition-all hover:border-teal hover:bg-teal-soft hover:text-navy active:scale-[0.99]"
-                >
-                  <AlertTriangle className="size-4 text-warning" />
-                  Enviar una incidencia
-                </button>
+                </div> */}
               </form>
 
-              <p className="mt-7 text-center text-[11px] text-muted-foreground">
+              <p className="mt-4 text-center text-[11px] text-muted-foreground">
                 Sistema interno ITIC · Universidad Mayor de San Andrés
               </p>
             </div>

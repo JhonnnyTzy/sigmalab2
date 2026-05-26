@@ -8,450 +8,465 @@ datasource db {
 }
 
 model Edificio {
-  id        String        @id
-  nombre    String
-  ubicacion String?
-  activo    Boolean       @default(true)
-
+  id           String        @id @db.VarChar(10)
+  nombre       String        @db.VarChar(100)
+  ubicacion    String?       @db.VarChar(200)
+  activo       Boolean       @default(true)
   laboratorios Laboratorio[]
 
   @@map("edificios")
 }
 
 model Rol {
-  id           String    @id
-  nombre       String    @unique
-  descripcion  String?
-  nivelAcceso  Int       @map("nivel_acceso")
-  usuarios     Usuario[]
+  id          String    @id @db.VarChar(20)
+  nombre      String    @unique @db.VarChar(50)
+  descripcion String?   @db.VarChar(200)
+  nivelAcceso Int       @map("nivel_acceso") @db.SmallInt
+  usuarios    Usuario[]
 
   @@map("roles")
 }
 
 model CategoriaInventario {
-  id          String         @id
-  nombre      String         @unique
-  stockMinimo Int            @default(0) @map("stock_minimo")
-  activo      Boolean        @default(true)
+  id          String           @id @db.VarChar(30)
+  nombre      String           @unique @db.VarChar(100)
+  stockMinimo Int              @default(0) @map("stock_minimo")
+  activo      Boolean          @default(true)
   inventario  InventarioItem[]
 
   @@map("categorias_inventario")
 }
 
 model TipoMantenimiento {
-  id           String         @id
-  nombre       String         @unique
+  id             String          @id @db.VarChar(20)
+  nombre         String          @unique @db.VarChar(50)
   mantenimientos Mantenimiento[]
 
   @@map("tipo_mantenimiento")
 }
 
 model EstadoMantenimiento {
-  id           String         @id
-  nombre       String         @unique
+  id             String          @id @db.VarChar(20)
+  nombre         String          @unique @db.VarChar(50)
   mantenimientos Mantenimiento[]
 
   @@map("estado_mantenimiento")
 }
 
 model EstadoEquipo {
-  id      String  @id
-  nombre  String  @unique
+  id      String   @id @db.VarChar(30)
+  nombre  String   @unique @db.VarChar(50)
   equipos Equipo[]
 
   @@map("estado_equipo")
 }
 
 model EstadoIncidencia {
-  id          String       @id
-  nombre      String       @unique
+  id          String       @id @db.VarChar(20)
+  nombre      String       @unique @db.VarChar(50)
   incidencias Incidencia[]
 
   @@map("estado_incidencia")
 }
 
 model Persona {
-  id              String      @id
-  nombres         String
-  paterno         String
-  materno         String?
-  ci              String?     @unique
-  registroUniversitario String? @unique @map("registro_universitario")
-  email           String?     @unique
-  celular         String?
-  fotoUrl         String?     @map("foto_url")
-  activo          Boolean     @default(true)
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-
-  usuario             Usuario?
-  laboratorios        Laboratorio[]    @relation("EncargadoLaboratorio")
-  gruposDocente       Grupo[]          @relation("DocenteGrupo")
-  inscripciones       Inscripcion[]
-  incidencias         Incidencia[]
-  usosLaboratorio     UsoLaboratorio[]
+  id                    String           @id @db.VarChar(20)
+  nombres               String           @db.VarChar(100)
+  paterno               String           @db.VarChar(50)
+  materno               String?          @db.VarChar(50)
+  ci                    String?          @unique @db.VarChar(20)
+  registroUniversitario String?          @unique @map("registro_universitario") @db.VarChar(20)
+  email                 String?          @unique @db.VarChar(150)
+  celular               String?          @db.VarChar(20)
+  activo                Boolean          @default(true)
+  createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  gruposDocente         Grupo[]          @relation("DocenteGrupo")
+  incidencias           Incidencia[]
+  inscripciones         Inscripcion[]
+  laboratorios          Laboratorio[]    @relation("EncargadoLaboratorio")
+  usosLaboratorio       UsoLaboratorio[]
+  usuario               Usuario?
 
   @@map("personas")
 }
 
 model Usuario {
-  id           String    @id
-  personaId    String    @unique @map("persona_id")
-  roleId       String    @map("role_id")
-  passwordHash String    @map("password_hash")
-  ultimoAcceso DateTime? @map("ultimo_acceso")
-  activo       Boolean   @default(true)
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  persona           Persona            @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  rol               Rol                @relation(fields: [roleId], references: [id])
-  mantenimientos    Mantenimiento[]
-  incidencias       Incidencia[]
+  id                String           @id @db.VarChar(20)
+  personaId         String           @unique @map("persona_id") @db.VarChar(20)
+  roleId            String           @map("role_id") @db.VarChar(20)
+  passwordHash      String           @map("password_hash") @db.VarChar(255)
+  ultimoAcceso      DateTime?        @map("ultimo_acceso") @db.Timestamp(6)
+  activo            Boolean          @default(true)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   asignaciones      Asignacion[]
-  reportesPasante   ReportePasante[]
-  reportesAtendidos ReportePasante[]   @relation("AtendidoPor")
+  incidencias       Incidencia[]
   logs              Log[]
+  mantenimientos    Mantenimiento[]
+  reportesAtendidos ReportePasante[] @relation("AtendidoPor")
+  reportesPasante   ReportePasante[]
+  persona           Persona          @relation(fields: [personaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rol               Rol              @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([roleId], map: "idx_usuarios_role")
   @@map("usuarios")
 }
 
 model Laboratorio {
-  id               String       @id
-  nombre           String
-  edificioId       String       @map("edificio_id")
-  piso             Int
-  capacidadEquipos Int          @map("capacidad_equipos")
-  capacidadPersonas Int         @map("capacidad_personas")
-  encargadoId      String?      @map("encargado_id")
-  activo           Boolean      @default(true)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id                String           @id @db.VarChar(20)
+  nombre            String           @db.VarChar(100)
+  edificioId        String           @map("edificio_id") @db.VarChar(10)
+  piso              Int              @db.SmallInt
+  capacidadEquipos  Int              @map("capacidad_equipos")
+  capacidadPersonas Int              @map("capacidad_personas")
+  encargadoId       String?          @map("encargado_id") @db.VarChar(20)
+  activo            Boolean          @default(true)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  asignaciones      Asignacion[]
+  equipos           Equipo[]
+  horarios          Horario[]
+  incidencias       Incidencia[]
+  inventario        InventarioItem[]
+  edificio          Edificio         @relation(fields: [edificioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  encargado         Persona?         @relation("EncargadoLaboratorio", fields: [encargadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mantenimientos    Mantenimiento[]
+  perifericos       Periferico[]
+  reportes_pasante  ReportePasante[]
+  usosLaboratorio   UsoLaboratorio[]
 
-  edificio         Edificio     @relation(fields: [edificioId], references: [id])
-  encargado        Persona?     @relation("EncargadoLaboratorio", fields: [encargadoId], references: [id])
-  equipos          Equipo[]
-  perifericos      Periferico[]
-  inventario       InventarioItem[]
-  incidencias      Incidencia[]
-  mantenimientos   Mantenimiento[]
-  horarios         Horario[]
-  usosLaboratorio  UsoLaboratorio[]
-
+  @@index([edificioId], map: "idx_laboratorios_edificio")
+  @@index([encargadoId], map: "idx_laboratorios_encargado")
   @@map("laboratorios")
 }
 
 model Equipo {
-  codigo           String       @id
-  nombre           String
-  laboratorioId    String       @map("laboratorio_id")
-  fila             String?
-  puesto           String?
-  sistemaOperativo String?      @map("sistema_operativo")
-  marca            String?
-  modelo           String?
-  numeroSerie      String?      @unique @map("numero_serie")
-  estadoId         String       @map("estado_id")
-  fechaCompra      DateTime?    @map("fecha_compra")
-  activo           Boolean      @default(true)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  laboratorio      Laboratorio  @relation(fields: [laboratorioId], references: [id])
-  estado           EstadoEquipo @relation(fields: [estadoId], references: [id])
-  mantenimientos   Mantenimiento[]
-  incidencias      Incidencia[]
+  codigo           String           @id @db.VarChar(30)
+  nombre           String           @db.VarChar(150)
+  laboratorioId    String           @map("laboratorio_id") @db.VarChar(20)
+  fila             String?          @db.VarChar(5)
+  puesto           String?          @db.VarChar(5)
+  sistemaOperativo String?          @map("sistema_operativo") @db.VarChar(100)
+  marca            String?          @db.VarChar(50)
+  modelo           String?          @db.VarChar(100)
+  numeroSerie      String?          @unique @map("numero_serie") @db.VarChar(100)
+  estadoId         String           @map("estado_id") @db.VarChar(30)
+  fechaCompra      DateTime?        @map("fecha_compra") @db.Date
+  activo           Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   asignaciones     Asignacion[]
-  perifericos      Periferico[]
+  estado           EstadoEquipo     @relation(fields: [estadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio      Laboratorio      @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  incidencias      Incidencia[]
   inventarioItems  InventarioItem[]
+  mantenimientos   Mantenimiento[]
+  perifericos      Periferico[]
 
-  @@unique([laboratorioId, fila, puesto])
+  @@unique([laboratorioId, fila, puesto], map: "uq_equipo_ubicacion")
+  @@index([estadoId], map: "idx_equipos_estado")
+  @@index([laboratorioId], map: "idx_equipos_lab")
   @@map("equipos")
 }
 
 model Periferico {
-  id             String      @id
-  tipo           String
-  marca          String?
-  modelo         String?
-  numeroSerie    String?     @map("numero_serie")
-  laboratorioId  String?     @map("laboratorio_id")
-  equipoCodigo   String?     @map("equipo_codigo")
-  estado         String      @default("Funcionando")
-  activo         Boolean     @default(true)
-  createdAt      DateTime    @default(now()) @map("created_at")
+  id            String       @id @db.VarChar(30)
+  tipo          String       @db.VarChar(50)
+  marca         String?      @db.VarChar(50)
+  modelo        String?      @db.VarChar(100)
+  numeroSerie   String?      @map("numero_serie") @db.VarChar(100)
+  laboratorioId String?      @map("laboratorio_id") @db.VarChar(20)
+  equipoCodigo  String?      @map("equipo_codigo") @db.VarChar(30)
+  estado        String       @default("Funcionando") @db.VarChar(30)
+  activo        Boolean      @default(true)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  equipo        Equipo?      @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio   Laboratorio? @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  laboratorio    Laboratorio? @relation(fields: [laboratorioId], references: [id])
-  equipo         Equipo?      @relation(fields: [equipoCodigo], references: [codigo])
-
+  @@index([equipoCodigo], map: "idx_perifericos_equipo")
+  @@index([laboratorioId], map: "idx_perifericos_lab")
   @@map("perifericos")
 }
 
 model InventarioItem {
-  id               String               @id
-  categoriaId      String               @map("categoria_id")
-  codigoItic       String               @unique @map("codigo_itic")
-  codigoFacultativo String?              @map("codigo_facultativo")
-  codigoUmsa       String?              @map("codigo_umsa")
-  numeroSerie      String?              @map("numero_serie")
-  marca            String?
-  modelo           String?
-  estado           String               @default("En almacén")
-  fechaIngreso     DateTime             @map("fecha_ingreso")
-  fechaAsignacion  DateTime?            @map("fecha_asignacion")
-  laboratorioId    String?              @map("laboratorio_id")
-  equipoCodigo     String?              @map("equipo_codigo")
-  observaciones    String?
-  activo           Boolean              @default(true)
-  createdAt        DateTime             @default(now()) @map("created_at")
+  id                String              @id @db.VarChar(30)
+  categoriaId       String              @map("categoria_id") @db.VarChar(30)
+  codigoItic        String              @unique @map("codigo_itic") @db.VarChar(50)
+  codigoFacultativo String?             @map("codigo_facultativo") @db.VarChar(50)
+  codigoUmsa        String?             @map("codigo_umsa") @db.VarChar(50)
+  numeroSerie       String?             @map("numero_serie") @db.VarChar(100)
+  marca             String?             @db.VarChar(50)
+  modelo            String?             @db.VarChar(100)
+  estado            String              @default("En almacén") @db.VarChar(30)
+  fechaIngreso      DateTime            @map("fecha_ingreso") @db.Date
+  fechaAsignacion   DateTime?           @map("fecha_asignacion") @db.Date
+  laboratorioId     String?             @map("laboratorio_id") @db.VarChar(20)
+  equipoCodigo      String?             @map("equipo_codigo") @db.VarChar(30)
+  observaciones     String?
+  activo            Boolean             @default(true)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  categoria         CategoriaInventario @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipo            Equipo?             @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio       Laboratorio?        @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  categoria        CategoriaInventario  @relation(fields: [categoriaId], references: [id])
-  laboratorio      Laboratorio?         @relation(fields: [laboratorioId], references: [id])
-  equipo           Equipo?              @relation(fields: [equipoCodigo], references: [codigo])
-
+  @@index([categoriaId], map: "idx_inventario_categoria")
+  @@index([laboratorioId], map: "idx_inventario_lab")
   @@map("inventario")
 }
 
 model Insumo {
-  nombre       String        @id
-  unidadMedida String        @map("unidad_medida")
-  stock        Int           @default(0)
-  stockMinimo  Int           @default(0) @map("stock_minimo")
-  activo       Boolean       @default(true)
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-
+  nombre        String        @id @db.VarChar(100)
+  unidadMedida  String        @map("unidad_medida") @db.VarChar(30)
+  stock         Int           @default(0)
+  stockMinimo   Int           @default(0) @map("stock_minimo")
+  activo        Boolean       @default(true)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   insumosUsados InsumoUsado[]
 
   @@map("insumos")
 }
 
 model Mantenimiento {
-  id            String                @id
-  tipoId        String                @map("tipo_id")
-  equipoCodigo  String                @map("equipo_codigo")
-  tecnicoId     String                @map("tecnico_id")
-  laboratorioId String?               @map("laboratorio_id")
-  fecha         DateTime
-  horaInicio    DateTime?             @map("hora_inicio")
-  horaFin       DateTime?             @map("hora_fin")
-  estadoId      String                @map("estado_id")
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
-
-  tipo          TipoMantenimiento     @relation(fields: [tipoId], references: [id])
-  equipo        Equipo                @relation(fields: [equipoCodigo], references: [codigo])
-  tecnico       Usuario               @relation(fields: [tecnicoId], references: [id])
-  laboratorio   Laboratorio?          @relation(fields: [laboratorioId], references: [id])
-  estado        EstadoMantenimiento   @relation(fields: [estadoId], references: [id])
+  id            String                @id @db.VarChar(30)
+  tipoId        String                @map("tipo_id") @db.VarChar(20)
+  equipoCodigo  String                @map("equipo_codigo") @db.VarChar(30)
+  tecnicoId     String                @map("tecnico_id") @db.VarChar(20)
+  laboratorioId String?               @map("laboratorio_id") @db.VarChar(20)
+  fecha         DateTime              @db.Date
+  horaInicio    DateTime?             @map("hora_inicio") @db.Time(6)
+  horaFin       DateTime?             @map("hora_fin") @db.Time(6)
+  estadoId      String                @map("estado_id") @db.VarChar(20)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  equipo        Equipo                @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  estado        EstadoMantenimiento   @relation(fields: [estadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio   Laboratorio?          @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tecnico       Usuario               @relation(fields: [tecnicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo          TipoMantenimiento     @relation(fields: [tipoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   detalle       MantenimientoDetalle?
 
+  @@index([equipoCodigo], map: "idx_mantenimientos_equipo")
+  @@index([estadoId], map: "idx_mantenimientos_estado")
+  @@index([fecha(sort: Desc)], map: "idx_mantenimientos_fecha")
+  @@index([tecnicoId], map: "idx_mantenimientos_tecnico")
   @@map("mantenimientos")
 }
 
 model MantenimientoDetalle {
-  id              String        @id
-  mantenimientoId String        @unique @map("mantenimiento_id")
+  id              String        @id @db.VarChar(30)
+  mantenimientoId String        @unique @map("mantenimiento_id") @db.VarChar(30)
   descripcion     String?
   diagnostico     String?
   accionRealizada String?       @map("accion_realizada")
   resolucion      String?
-  tipoIncidencia  String?       @map("tipo_incidencia")
-  estadoFinal     String?       @map("estado_final")
+  tipoIncidencia  String?       @map("tipo_incidencia") @db.VarChar(50)
+  estadoFinal     String?       @map("estado_final") @db.VarChar(50)
   observaciones   String?
   recomendaciones String?
-
-  mantenimiento Mantenimiento  @relation(fields: [mantenimientoId], references: [id], onDelete: Cascade)
-  checklists     Checklist[]
-  insumosUsados  InsumoUsado[]
+  checklists      Checklist[]
+  insumosUsados   InsumoUsado[]
+  mantenimiento   Mantenimiento @relation(fields: [mantenimientoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("mantenimientos_detalle")
 }
 
 model Checklist {
-  id          String             @id
-  detalleId   String             @map("detalle_id")
-  categoria   String
-  item        String
-  estado      String
+  id          String               @id @db.VarChar(30)
+  detalleId   String               @map("detalle_id") @db.VarChar(30)
+  categoria   String               @db.VarChar(30)
+  item        String               @db.VarChar(200)
+  estado      String               @db.VarChar(20)
   observacion String?
+  detalle     MantenimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  detalle MantenimientoDetalle  @relation(fields: [detalleId], references: [id], onDelete: Cascade)
-
+  @@index([detalleId], map: "idx_checklists_detalle")
   @@map("checklists")
 }
 
 model InsumoUsado {
-  id           String             @id
-  detalleId    String             @map("detalle_id")
-  insumoNombre String             @map("insumo_nombre")
-  cantidad     String
-  createdAt    DateTime           @default(now()) @map("created_at")
+  id           String               @id @db.VarChar(30)
+  detalleId    String               @map("detalle_id") @db.VarChar(30)
+  insumoNombre String               @map("insumo_nombre") @db.VarChar(100)
+  cantidad     String               @db.VarChar(50)
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamp(6)
+  detalle      MantenimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  insumo       Insumo               @relation(fields: [insumoNombre], references: [nombre], onDelete: NoAction, onUpdate: NoAction)
 
-  detalle      MantenimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
-  insumo       Insumo               @relation(fields: [insumoNombre], references: [nombre])
-
+  @@index([detalleId], map: "idx_insumos_usados_detalle")
   @@map("insumos_usados")
 }
 
 model Incidencia {
-  id                   String            @id
-  equipoCodigo         String?           @map("equipo_codigo")
-  laboratorioId        String?           @map("laboratorio_id")
-  usuarioId            String?           @map("usuario_id")
-  personaId            String?           @map("persona_id")
-  problema             String
-  requiereSeguimiento  Boolean           @default(false) @map("requiere_seguimiento")
-  estadoId             String            @map("estado_id")
-  fecha                DateTime          @default(now())
-  resueltaEn           DateTime?         @map("resuelta_en")
-  createdAt            DateTime          @default(now()) @map("created_at")
-  updatedAt            DateTime          @updatedAt @map("updated_at")
+  id                  String           @id @db.VarChar(30)
+  equipoCodigo        String?          @map("equipo_codigo") @db.VarChar(30)
+  laboratorioId       String?          @map("laboratorio_id") @db.VarChar(20)
+  usuarioId           String?          @map("usuario_id") @db.VarChar(20)
+  personaId           String?          @map("persona_id") @db.VarChar(20)
+  problema            String
+  requiereSeguimiento Boolean          @default(false) @map("requiere_seguimiento")
+  estadoId            String           @map("estado_id") @db.VarChar(20)
+  fecha               DateTime         @default(now()) @db.Timestamp(6)
+  resueltaEn          DateTime?        @map("resuelta_en") @db.Timestamp(6)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  equipo              Equipo?          @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  estado              EstadoIncidencia @relation(fields: [estadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio         Laboratorio?     @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona             Persona?         @relation(fields: [personaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario             Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  equipo               Equipo?           @relation(fields: [equipoCodigo], references: [codigo])
-  laboratorio          Laboratorio?      @relation(fields: [laboratorioId], references: [id])
-  usuario              Usuario?          @relation(fields: [usuarioId], references: [id])
-  persona              Persona?          @relation(fields: [personaId], references: [id])
-  estado               EstadoIncidencia  @relation(fields: [estadoId], references: [id])
-
+  @@index([equipoCodigo], map: "idx_incidencias_equipo")
+  @@index([estadoId], map: "idx_incidencias_estado")
+  @@index([fecha(sort: Desc)], map: "idx_incidencias_fecha")
   @@map("incidencias")
 }
 
 model Asignacion {
-  id            String    @id
-  equipoCodigo  String    @map("equipo_codigo")
-  laboratorioId String?   @map("laboratorio_id")
-  tecnicoId     String    @map("tecnico_id")
+  id            String       @id @db.VarChar(30)
+  equipoCodigo  String       @map("equipo_codigo") @db.VarChar(30)
+  laboratorioId String?      @map("laboratorio_id") @db.VarChar(20)
+  tecnicoId     String       @map("tecnico_id") @db.VarChar(20)
   problema      String
-  prioridad     String    @default("Media")
-  fecha         DateTime
-  estado        String    @default("Pendiente")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  prioridad     String       @default("Media") @db.VarChar(10)
+  fecha         DateTime     @default(dbgenerated("CURRENT_DATE")) @db.Date
+  estado        String       @default("Pendiente") @db.VarChar(20)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  equipo        Equipo       @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  laboratorios  Laboratorio? @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tecnico       Usuario      @relation(fields: [tecnicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  equipo        Equipo    @relation(fields: [equipoCodigo], references: [codigo])
-  tecnico       Usuario   @relation(fields: [tecnicoId], references: [id])
-
+  @@index([estado], map: "idx_asignaciones_estado")
+  @@index([tecnicoId], map: "idx_asignaciones_tecnico")
   @@map("asignaciones")
 }
 
 model ReportePasante {
-  id                String    @id
-  pasanteId         String    @map("pasante_id")
-  titulo            String
+  id                String       @id @db.VarChar(30)
+  pasanteId         String       @map("pasante_id") @db.VarChar(20)
+  titulo            String       @db.VarChar(200)
   descripcion       String
-  laboratorioId     String?   @map("laboratorio_id")
-  ubicacion         String?
-  categoria         String?
-  prioridad         String    @default("Media")
-  fecha             DateTime  @default(now())
-  estado            String    @default("Nuevo")
-  resolucionDetalle String?   @map("resolucion_detalle")
-  atendidoPor       String?   @map("atendido_por")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  laboratorioId     String?      @map("laboratorio_id") @db.VarChar(20)
+  ubicacion         String?      @db.VarChar(200)
+  categoria         String?      @db.VarChar(50)
+  prioridad         String       @default("Media") @db.VarChar(10)
+  fecha             DateTime     @default(now()) @db.Timestamp(6)
+  estado            String       @default("Nuevo") @db.VarChar(20)
+  resolucionDetalle String?      @map("resolucion_detalle")
+  atendidoPor       String?      @map("atendido_por") @db.VarChar(20)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  atendidoPorUser   Usuario?     @relation("AtendidoPor", fields: [atendidoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorios      Laboratorio? @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pasante           Usuario      @relation(fields: [pasanteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  pasante           Usuario   @relation(fields: [pasanteId], references: [id])
-  atendidoPorUser   Usuario?  @relation("AtendidoPor", fields: [atendidoPor], references: [id])
-
+  @@index([estado], map: "idx_reportes_estado")
+  @@index([pasanteId], map: "idx_reportes_pasante")
   @@map("reportes_pasante")
 }
 
 model Log {
-  id          String   @id
-  timestamp   DateTime @default(now())
-  usuarioId   String?  @map("usuario_id")
-  accion      String
-  detalle     String?
-  modulo      String?
-  entidad     String?
-  equipoCodigo String? @map("equipo_codigo")
-  tipoAccion  String?  @map("tipo_accion")
-  estado      String   @default("Éxito")
-  ipOrigen    String?  @map("ip_origen")
+  id           String   @id @db.VarChar(30)
+  timestamp    DateTime @default(now()) @db.Timestamp(6)
+  usuarioId    String?  @map("usuario_id") @db.VarChar(20)
+  accion       String   @db.VarChar(100)
+  detalle      String?
+  modulo       String?  @db.VarChar(50)
+  entidad      String?  @db.VarChar(50)
+  equipoCodigo String?  @map("equipo_codigo") @db.VarChar(30)
+  tipoAccion   String?  @map("tipo_accion") @db.VarChar(20)
+  estado       String   @default("Éxito") @db.VarChar(20)
+  ipOrigen     String?  @map("ip_origen") @db.VarChar(45)
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  usuario     Usuario? @relation(fields: [usuarioId], references: [id])
-
+  @@index([modulo], map: "idx_logs_modulo")
+  @@index([timestamp(sort: Desc)], map: "idx_logs_timestamp")
+  @@index([usuarioId], map: "idx_logs_usuario")
   @@map("logs")
 }
 
 model Materia {
-  codigo       String   @id
-  nombre       String
-  sigla        String   @unique
-  nivel        Int
-  horasTeoricas Int     @map("horas_teoricas")
-  horasPracticas Int    @map("horas_practicas")
-  activo       Boolean  @default(true)
-
-  grupos       Grupo[]
+  codigo         String  @id @db.VarChar(20)
+  nombre         String  @db.VarChar(200)
+  sigla          String  @unique @db.VarChar(10)
+  nivel          Int     @db.SmallInt
+  horasTeoricas  Int     @default(0) @map("horas_teoricas")
+  horasPracticas Int     @default(0) @map("horas_practicas")
+  activo         Boolean @default(true)
+  grupos         Grupo[]
 
   @@map("materias")
 }
 
 model Grupo {
-  id            String    @id
-  materiaCodigo String    @map("materia_codigo")
-  numeroGrupo   String    @map("numero_grupo")
-  gestion       Int
-  periodo       String
-  docenteId     String?   @map("docente_id")
-  cupoMaximo    Int       @map("cupo_maximo")
-  activo        Boolean   @default(true)
-
-  materia       Materia   @relation(fields: [materiaCodigo], references: [codigo])
-  docente       Persona?  @relation("DocenteGrupo", fields: [docenteId], references: [id])
-  horarios      Horario[]
-  inscripciones Inscripcion[]
+  id              String           @id @db.VarChar(30)
+  materiaCodigo   String           @map("materia_codigo") @db.VarChar(20)
+  numeroGrupo     String           @map("numero_grupo") @db.VarChar(5)
+  gestion         Int
+  periodo         String           @db.VarChar(10)
+  docenteId       String?          @map("docente_id") @db.VarChar(20)
+  cupoMaximo      Int              @map("cupo_maximo")
+  activo          Boolean          @default(true)
+  docente         Persona?         @relation("DocenteGrupo", fields: [docenteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  materia         Materia          @relation(fields: [materiaCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  horarios        Horario[]
+  inscripciones   Inscripcion[]
   usosLaboratorio UsoLaboratorio[]
 
-  @@unique([materiaCodigo, numeroGrupo, gestion, periodo])
+  @@unique([materiaCodigo, numeroGrupo, gestion, periodo], map: "uq_grupo_materia")
+  @@index([docenteId], map: "idx_grupos_docente")
+  @@index([materiaCodigo], map: "idx_grupos_materia")
   @@map("grupos")
 }
 
 model Horario {
-  id            String     @id
-  grupoId       String     @map("grupo_id")
-  laboratorioId String     @map("laboratorio_id")
-  diaSemana     Int        @map("dia_semana")
-  horaInicio    DateTime   @map("hora_inicio")
-  horaFin       DateTime   @map("hora_fin")
-  tipoClase     String     @default("Práctica") @map("tipo_clase")
+  id            String      @id @db.VarChar(30)
+  grupoId       String      @map("grupo_id") @db.VarChar(30)
+  laboratorioId String      @map("laboratorio_id") @db.VarChar(20)
+  diaSemana     Int         @map("dia_semana") @db.SmallInt
+  horaInicio    DateTime    @map("hora_inicio") @db.Time(6)
+  horaFin       DateTime    @map("hora_fin") @db.Time(6)
+  tipoClase     String      @default("Práctica") @map("tipo_clase") @db.VarChar(20)
+  grupo         Grupo       @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  grupo         Grupo      @relation(fields: [grupoId], references: [id])
-  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id])
-
-  @@unique([laboratorioId, diaSemana, horaInicio])
+  @@unique([laboratorioId, diaSemana, horaInicio], map: "uq_horario_lab")
+  @@index([grupoId], map: "idx_horarios_grupo")
+  @@index([laboratorioId], map: "idx_horarios_lab")
   @@map("horarios")
 }
 
 model Inscripcion {
-  id               String   @id
-  personaId        String   @map("persona_id")
-  grupoId          String   @map("grupo_id")
-  fechaInscripcion DateTime @map("fecha_inscripcion")
+  id               String   @id @db.VarChar(30)
+  personaId        String   @map("persona_id") @db.VarChar(20)
+  grupoId          String   @map("grupo_id") @db.VarChar(30)
+  fechaInscripcion DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_inscripcion") @db.Date
   activo           Boolean  @default(true)
+  grupo            Grupo    @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona          Persona  @relation(fields: [personaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  persona          Persona  @relation(fields: [personaId], references: [id])
-  grupo            Grupo    @relation(fields: [grupoId], references: [id])
-
-  @@unique([personaId, grupoId])
+  @@unique([personaId, grupoId], map: "uq_inscripcion")
+  @@index([grupoId], map: "idx_inscripciones_grupo")
+  @@index([personaId], map: "idx_inscripciones_persona")
   @@map("inscripciones")
 }
 
 model UsoLaboratorio {
-  id            String     @id
-  laboratorioId String     @map("laboratorio_id")
-  grupoId       String?    @map("grupo_id")
-  personaId     String?    @map("persona_id")
-  fecha         DateTime
-  horaIngreso   DateTime   @map("hora_ingreso")
-  horaSalida    DateTime?  @map("hora_salida")
-  motivo        String?
-  createdAt     DateTime   @default(now()) @map("created_at")
+  id            String      @id @db.VarChar(30)
+  laboratorioId String      @map("laboratorio_id") @db.VarChar(20)
+  grupoId       String?     @map("grupo_id") @db.VarChar(30)
+  personaId     String?     @map("persona_id") @db.VarChar(20)
+  fecha         DateTime    @db.Date
+  horaIngreso   DateTime    @map("hora_ingreso") @db.Timestamp(6)
+  horaSalida    DateTime?   @map("hora_salida") @db.Timestamp(6)
+  motivo        String?     @db.VarChar(200)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  grupo         Grupo?      @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona       Persona?    @relation(fields: [personaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id])
-  grupo         Grupo?      @relation(fields: [grupoId], references: [id])
-  persona       Persona?    @relation(fields: [personaId], references: [id])
-
+  @@index([fecha(sort: Desc)], map: "idx_uso_lab_fecha")
+  @@index([laboratorioId], map: "idx_uso_lab_lab")
   @@map("uso_laboratorio")
 }
