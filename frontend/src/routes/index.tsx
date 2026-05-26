@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/sigmalab/Sidebar";
 import { getViewLabel } from "@/components/sigmalab/sidebar-utils";
 import { TopBar } from "@/components/sigmalab/TopBar";
 import { Breadcrumb } from "@/components/sigmalab/Breadcrumb";
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // <-- Añadido useState
 import { useApp } from "@/lib/use-app";
 import { Login } from "@/views/Login";
 import { can } from "@/lib/auth";
@@ -110,9 +110,16 @@ function ViewRenderer({ role, view }: { role: string; view: string }) {
   return <PlaceholderView title="Sin acceso" />;
 }
 
+// ============================================================
+// AQUÍ ESTÁ EL CAMBIO MAESTRO PARA EL RESPONSIVE
+// ============================================================
 function App() {
   const { role, view, isAuthenticated } = useApp();
+  // Añadimos el estado para controlar si el menú lateral está abierto en celulares
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   useEffect(() => { if (isAuthenticated) initFromApi(); }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     return (
       <>
@@ -121,14 +128,38 @@ function App() {
       </>
     );
   }
+
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      <TopBar />
-      <main className="ml-60 pt-16">
-        <div className="px-8 py-3"><Breadcrumb /></div>
-        <div className="px-8 pt-2 pb-10"><ViewRenderer role={role} view={view} /></div>
+    <div className="min-h-screen bg-background relative">
+      {/* Le pasamos al Sidebar el estado actual y una función para cerrarse.
+        En escritorio, ignorará esto y siempre estará abierto. 
+      */}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
+
+      {/* Le pasamos al TopBar una función para que, cuando toques 
+        el menú hamburguesa, el menú lateral se abra. 
+      */}
+      <TopBar 
+        onOpenSidebar={() => setIsSidebarOpen(true)} 
+      />
+
+      {/* EL MARGEN DINÁMICO: 
+        ml-0: En móviles, el contenido ocupa el 100% de la pantalla (sin margen izquierdo).
+        lg:ml-64: En pantallas grandes, deja un margen de 16rem (256px) para la barra lateral.
+      */}
+      <main className="ml-0 lg:ml-64 pt-16 transition-all duration-300 ease-in-out">
+        {/* También reducimos los paddings (px-4) en móviles para que las tablas quepan mejor */}
+        <div className="px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb />
+        </div>
+        <div className="px-4 sm:px-6 lg:px-8 pt-2 pb-10">
+          <ViewRenderer role={role} view={view} />
+        </div>
       </main>
+
       <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
