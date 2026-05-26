@@ -165,7 +165,7 @@ export function UsuariosView() {
         <input value={form.materno} onChange={(e) => setForm({ ...form, materno: e.target.value })} className={inputCls} aria-label="Apellido materno" />
       </FormField>
       <FormField label="Celular">
-        <input value={form.celular} placeholder="+591 7XXXXXXX"
+        <input value={form.celular} placeholder="7XXXXXXX"
           onChange={(e) => setForm({ ...form, celular: e.target.value })} className={inputCls} aria-label="Celular" />
       </FormField>
       <div className="md:col-span-2">

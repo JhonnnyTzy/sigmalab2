@@ -35,3 +35,9 @@ dist-ssr
 backend/node_modules/
 backend/dist/
 backend/prisma/migrations/
+
+# Variables de entorno locales
+.env
+backend/.env
+frontend/.env
+*.env.local
