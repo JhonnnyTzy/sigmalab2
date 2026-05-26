@@ -66,11 +66,11 @@ export function Login() {
         />
       </div>
 
-      {/* Main Container - Adjusted padding to prevent scroll */}
+      {/* Main Container */}
       <div className="w-full max-w-[68rem] px-4 py-6 md:py-8">
         <div className="grid w-full gap-6 lg:grid-cols-2 lg:gap-8 items-stretch">
           
-          {/* Brand panel */}
+          {/* Brand panel (Desktop Only) */}
           <div className="relative hidden lg:flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-navy via-[oklch(0.28_0.12_265)] to-slate-900 p-8 xl:p-10 text-white shadow-[0_30px_80px_-30px_rgba(30,39,97,0.55)]">
             <div className="absolute inset-0 opacity-30 mix-blend-overlay"
               style={{
@@ -85,7 +85,7 @@ export function Login() {
                 <img 
                   src="/logosvg.png" 
                   alt="SIGMALAB Logo" 
-                  className="w-60 h-50 xl:w-40 xl:h-40 object-contain mx-auto mb-2 invert brightness-0" 
+                  className="w-60 h-60 xl:w-40 xl:h-40 object-contain mx-auto mb-2 invert brightness-0" 
                 />
                 <div className="flex flex-col items-center">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 text-center">ITIC · INFORMÁTICA · UMSA</p>
@@ -93,7 +93,7 @@ export function Login() {
                 </div>
               </div>
               
-              {/* Central Text - Auto margins center it vertically */}
+              {/* Central Text */}
               <div className="my-auto text-center">
                 <h1 className="text-2xl xl:text-3xl font-semibold leading-tight">
                   Gestión integral del mantenimiento <span className="text-teal">de laboratorios</span>.
@@ -125,20 +125,26 @@ export function Login() {
             </div>
           </div>
 
-          {/* Form card */}
+          {/* Form card (Mobile & Desktop) */}
           <div className="relative flex flex-col justify-center">
-            <div className="rounded-3xl border border-white/60 bg-white/80 p-6 xl:p-9 shadow-[0_25px_70px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+            <div className="rounded-3xl border border-white/60 bg-white/90 p-6 xl:p-9 shadow-[0_25px_70px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl">
               
+              {/* Header de Móvil Corregido */}
               <div className="mb-6 flex flex-col items-center gap-3 lg:hidden">
-                <img src="/logosvg.png" alt="SIGMALAB Logo" className="w-16 h-16 object-contain invert brightness-0 rounded-xl bg-navy p-2" />
+                {/* CAMBIO AQUÍ: logo.png (a color), sin invert, sin bg-navy */}
+                <img 
+                  src="/logosvg.png" 
+                  alt="SIGMALAB Logo" 
+                  className="w-30 h-30 object-contain drop-shadow-md" 
+                />
                 <div className="flex flex-col items-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">ITIC · UMSA</p>
-                  <span className="text-xl font-extrabold text-navy">SIGMALAB</span>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">ITIC · UMSA</p>
+                  <span className="text-2xl font-extrabold text-navy">SIGMALAB</span>
                 </div>
               </div>
 
               <h2 className="text-2xl font-semibold tracking-tight text-navy sm:text-[26px]">Bienvenido</h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-sm text-slate-500">
                 Ingresa tus credenciales institucionales para continuar.
               </p>
 
@@ -202,14 +208,9 @@ export function Login() {
                     <>Iniciar sesión <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></>
                   )}
                 </button>
-
-                {/* <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
-                  <div className="relative flex justify-center"><span className="bg-white/80 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">o</span></div>
-                </div> */}
               </form>
 
-              <p className="mt-4 text-center text-[11px] text-muted-foreground">
+              <p className="mt-5 text-center text-[11px] text-slate-400 font-medium tracking-wide">
                 Sistema interno ITIC · Universidad Mayor de San Andrés
               </p>
             </div>

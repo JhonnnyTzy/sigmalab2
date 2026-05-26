@@ -1,14 +1,19 @@
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { auth, useAuth, ROLE_LABEL } from "@/lib/auth";
 import { useApp } from "@/lib/use-app";
 import { useStore } from "@/lib/store";
 
-export function TopBar() {
+interface TopBarProps {
+  onOpenSidebar?: () => void;
+}
+
+export function TopBar({ onOpenSidebar }: TopBarProps) {
   const { user } = useAuth();
   const { setView, role } = useApp();
   const reportes = useStore((s) => s.reportesPasante);
   const asignaciones = useStore((s) => s.asignaciones);
+  
   if (!user) return null;
   
   const initials = `${user.nombres[0] ?? ""}${user.paterno[0] ?? ""}`.toUpperCase();
@@ -26,51 +31,67 @@ export function TopBar() {
   }
 
   return (
-    <header className="fixed top-0 right-0 left-60 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-card px-6 shadow-sm">
-      <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
-        {/* Usamos classes responsivas para a altura */}
-        <img 
-          src="/logosvg.png" 
-          alt="SIGMALAB Logo" 
-          // Base (mobile): h-10 (40px)
-          // sm: h-12 (48px)
-          // lg: h-14 (56px, quase preenche o cabeçalho de 64px)
-          className="h-10 w-auto sm:h-12 lg:h-14 object-contain drop-shadow-md transition-all duration-300" 
-        />
-        <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-navy transition-all duration-300">
-          SIGMALAB
-        </span>
+    <header className="fixed top-0 right-0 left-0 lg:left-64 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-6 shadow-sm transition-all duration-300">
+      
+      <div className="flex items-center gap-2">
+        {/* Botón Hamburguesa: visible solo en móviles */}
+        <button 
+          onClick={onOpenSidebar}
+          className="lg:hidden p-2 -ml-2 text-navy hover:bg-slate-100 rounded-lg transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="size-6" />
+        </button>
+
+        {/* Logo y título RESTAURADOS */}
+        <div className="flex items-center gap-2">
+          <img 
+            src="/logosvg.png" 
+            alt="SIGMALAB Logo" 
+            className="h-8 sm:h-10 w-auto object-contain drop-shadow-md transition-all" 
+          />
+          {/* EL TEXTO VOLVIÓ: Ahora siempre visible, adaptando su tamaño al dispositivo */}
+          <span className="text-lg sm:text-2xl font-extrabold tracking-tight text-navy transition-all">
+            SIGMALAB
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {showBell && (
           <button type="button"
             onClick={() => setView("incidencias-bandeja")}
-            className="relative inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-navy transition-colors hover:bg-slate-50 shadow-sm"
+            className="relative inline-flex size-9 sm:size-10 items-center justify-center rounded-full border border-slate-200 text-navy transition-colors hover:bg-slate-50 shadow-sm"
             title={`${count} incidencia${count === 1 ? "" : "s"}`}
-            aria-label="Notificaciones de incidencias"
           >
-            <Bell className="size-4.5 text-slate-600" />
+            <Bell className="size-4 sm:size-4.5 text-slate-600" />
             {count > 0 && (
-              <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white shadow-md">
+              <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 sm:h-5 sm:min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[9px] sm:text-[10px] font-bold leading-none text-white shadow-md">
                 {count > 99 ? "99+" : count}
               </span>
             )}
           </button>
         )}
-        <button type="button" onClick={() => setView("profile")} className="text-right hover:opacity-80">
+        
+        {/* Info del usuario (Se oculta en móvil para que no choque con el logo) */}
+        <button type="button" onClick={() => setView("profile")} className="text-right hover:opacity-80 hidden md:block">
           <p className="text-sm font-bold text-navy">{displayName}</p>
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{ROLE_LABEL[user.role]}</p>
         </button>
-        <button type="button" onClick={() => setView("profile")} title="Mi Perfil" className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-blue-800 text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105">
+        
+        {/* Perfil de usuario (Iniciales) */}
+        <button type="button" onClick={() => setView("profile")} title="Mi Perfil" className="flex size-9 sm:size-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-blue-800 text-xs sm:text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105">
           {initials}
         </button>
+        
+        {/* Botón Salir */}
         <button type="button"
           onClick={() => { auth.logout(); toast.success("Sesión cerrada"); }}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-danger hover:border-danger/30"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 sm:px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-danger hover:border-danger/30"
           title="Cerrar sesión"
         >
-          <LogOut className="size-4" /> Salir
+          <LogOut className="size-3.5 sm:size-4" /> 
+          <span className="hidden sm:inline">Salir</span>
         </button>
       </div>
     </header>
