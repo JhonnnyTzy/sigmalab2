@@ -31,13 +31,14 @@ export function CrearIncidenciaView() {
     { equipo: "", lab: "", titulo: "", descripcion: "", categoria: CATEGORIAS[0], prioridad: "Media" as typeof PRIORIDADES[number] }
   );
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.titulo.trim() || !form.descripcion.trim() || !form.lab) {
       toast.error("Completa título, descripción y laboratorio");
       return;
     }
     const id = `RP-${Date.now()}`;
-    store.addReportePasante({
+    try {
+      await store.addReportePasante({
       id,
       pasante: user ? `${user.nombres} ${user.paterno}` : "anónimo",
       pasanteId: user?.id,
@@ -51,11 +52,14 @@ export function CrearIncidenciaView() {
       fecha: today(),
       estado: "Nuevo",
     });
-    toast.success("Incidencia enviada al Encargado ITIC");
-    dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
-    dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
-    dispatch({ type: "SET_FIELD", field: "equipo", value: "" });
-    dispatch({ type: "SET_FIELD", field: "lab", value: "" });
+      toast.success("Incidencia enviada al Encargado ITIC");
+      dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
+      dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
+      dispatch({ type: "SET_FIELD", field: "equipo", value: "" });
+      dispatch({ type: "SET_FIELD", field: "lab", value: "" });
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al enviar incidencia");
+    }
   };
 
   return (

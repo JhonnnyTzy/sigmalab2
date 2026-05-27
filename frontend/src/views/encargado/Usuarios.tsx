@@ -135,32 +135,41 @@ export function UsuariosView() {
       }
       dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
     } else if (modal.editing) {
-      const patch: Partial<AuthAccount> = {
-        role: form.role,
-        nombres: form.nombres.trim(),
-        paterno: form.paterno.trim(),
-        materno: form.materno.trim() || undefined,
-        email: usaRegistro ? undefined : identifier,
-        registro: usaRegistro ? identifier : undefined,
-        celular: form.celular.trim() || undefined,
-      };
-      if (form.password.trim()) patch.password = form.password;
-      auth.updateAccount(modal.editing.id, patch);
-      toast.success("Usuario actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      try {
+        const patch: any = {
+          role: form.role,
+          nombres: form.nombres.trim(),
+          paterno: form.paterno.trim(),
+          materno: form.materno.trim() || undefined,
+          email: usaRegistro ? undefined : identifier,
+          registro: usaRegistro ? identifier : undefined,
+          celular: form.celular.trim() || undefined,
+        };
+        if (form.password.trim()) patch.password = form.password;
+        await apiClient.patch(`/auth/${modal.editing.id}`, patch);
+        auth.updateAccount(modal.editing.id, patch);
+        toast.success("Usuario actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      } catch (e: any) {
+        toast.error(e?.response?.data?.error || "Error al actualizar usuario");
+      }
     }
   };
 
   const confirmDelete = async () => {
     if (!modal.deleting) return;
     const ahoraActivo = modal.deleting.activo !== false;
-    auth.updateAccount(modal.deleting.id, { activo: !ahoraActivo });
-    if (ahoraActivo) {
-      apiClient.delete(`/auth/${modal.deleting.id}`).catch(() => {});
-    } else {
-      apiClient.patch(`/auth/${modal.deleting.id}`, { activo: true }).catch(() => {});
+    try {
+      if (ahoraActivo) {
+        await apiClient.delete(`/auth/${modal.deleting.id}`);
+      } else {
+        await apiClient.patch(`/auth/${modal.deleting.id}`, { activo: true });
+      }
+      auth.updateAccount(modal.deleting.id, { activo: !ahoraActivo });
+      toast.success(ahoraActivo ? "Usuario desactivado" : "Usuario reactivado");
+      dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al cambiar estado del usuario");
     }
-    toast.success(ahoraActivo ? "Usuario desactivado" : "Usuario reactivado");
-    dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
   };
 
   const ViewProfileField = ({ label, value }: { label: string; value?: string }) => (

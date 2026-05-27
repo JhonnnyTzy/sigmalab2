@@ -172,21 +172,21 @@ export function BandejaIncidenciasView() {
         footer={<Button onClick={() => dispatchModal({ type: "SET_FIELD", field: "ver", value: null })}>Cerrar</Button>}>
         {modal.ver && (
           <div className="space-y-3 text-sm">
-            <Row k="Reportada por" v={ver.pasante} />
-            <Row k="Rol" v={rolLabel(ver.rolReporte)} />
-            <Row k="Fecha" v={ver.fecha} />
-            <Row k="Laboratorio" v={`${ver.laboratorio} · ${ver.ubicacion}`} />
-            <Row k="Categoría" v={ver.categoria} />
-            <Row k="Prioridad" v={<StatusBadge status={ver.prioridad} />} />
-            <Row k="Estado" v={<StatusBadge status={ver.estado} />} />
+            <Row k="Reportada por" v={modal.ver.pasante} />
+            <Row k="Rol" v={rolLabel(modal.ver.rolReporte)} />
+            <Row k="Fecha" v={modal.ver.fecha} />
+            <Row k="Laboratorio" v={`${modal.ver.laboratorio} · ${modal.ver.ubicacion}`} />
+            <Row k="Categoría" v={modal.ver.categoria} />
+            <Row k="Prioridad" v={<StatusBadge status={modal.ver.prioridad} />} />
+            <Row k="Estado" v={<StatusBadge status={modal.ver.estado} />} />
             <div>
               <p className="text-xs font-semibold text-muted-foreground">Descripción</p>
-              <p className="mt-1 rounded-md bg-slate-50 p-3">{ver.descripcion}</p>
+              <p className="mt-1 rounded-md bg-slate-50 p-3">{modal.ver.descripcion}</p>
             </div>
-            {ver.resolucionDetalle && (
+            {modal.ver.resolucionDetalle && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">Detalle de resolución</p>
-                <p className="mt-1 rounded-md bg-slate-50 p-3">{ver.resolucionDetalle}</p>
+                <p className="mt-1 rounded-md bg-slate-50 p-3">{modal.ver.resolucionDetalle}</p>
               </div>
             )}
           </div>
@@ -221,23 +221,27 @@ function AsignarModal({ rep, onClose, accounts }: { rep: ReportePasante | null; 
   const opciones = candidatos.map((a) => ({ key: a.email?.split("@")[0] ?? a.id, label: `${a.nombres} ${a.paterno}` }));
   const sel = pasante || opciones[0]?.key || "";
 
-  const submit = () => {
+  const submit = async () => {
     if (!rep) return;
     if (!sel) { toast.error("Selecciona un pasante"); return; }
     const cand = opciones.find((o) => o.key === sel);
-    store.addAsignacion({
-      id: `AS-${Date.now()}`,
-      equipo: rep.ubicacion && rep.ubicacion !== "—" ? rep.ubicacion : rep.laboratorio,
-      lab: rep.laboratorio,
-      asignadoA: sel,
-      problema: `${rep.titulo} — ${rep.descripcion}`,
-      prioridad: rep.prioridad,
-      fecha: today(),
-      estado: "Pendiente",
-    });
-    store.updateReportePasante(rep.id, { estado: "En proceso" });
-    toast.success(`Asignada a ${cand?.label ?? sel}`);
-    setPasante(""); setRol("correctivo"); onClose();
+    try {
+      await store.addAsignacion({
+        id: `AS-${Date.now()}`,
+        equipo: rep.ubicacion && rep.ubicacion !== "—" ? rep.ubicacion : rep.laboratorio,
+        lab: rep.laboratorio,
+        asignadoA: sel,
+        problema: `${rep.titulo} — ${rep.descripcion}`,
+        prioridad: rep.prioridad,
+        fecha: today(),
+        estado: "Pendiente",
+      });
+      await store.updateReportePasante(rep.id, { estado: "En proceso" });
+      toast.success(`Asignada a ${cand?.label ?? sel}`);
+      setPasante(""); setRol("correctivo"); onClose();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al asignar incidencia");
+    }
   };
 
   return (
@@ -272,7 +276,7 @@ function ResolverModal({ rep, onClose, adminUser }: { rep: ReportePasante | null
   const [detalle, setDetalle] = useState("");
   const [accion, setAccion] = useState("");
 
-  const submit = () => {
+  const submit = async () => {
     if (!rep) return;
     if (!detalle.trim()) { toast.error("Agrega un detalle de la resolución"); return; }
     const composed = [
@@ -280,9 +284,13 @@ function ResolverModal({ rep, onClose, adminUser }: { rep: ReportePasante | null
       accion.trim() && `Acción: ${accion.trim()}`,
       `Detalle: ${detalle.trim()}`,
     ].filter(Boolean).join("\n");
-    store.updateReportePasante(rep.id, { estado, resolucionDetalle: composed });
-    toast.success(`Incidencia marcada como ${estado}`);
-    setDetalle(""); setAccion(""); setEstado("Resuelto"); onClose();
+    try {
+      await store.updateReportePasante(rep.id, { estado, resolucionDetalle: composed });
+      toast.success(`Incidencia marcada como ${estado}`);
+      setDetalle(""); setAccion(""); setEstado("Resuelto"); onClose();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al resolver incidencia");
+    }
   };
 
   return (

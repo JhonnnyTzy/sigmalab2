@@ -168,12 +168,16 @@ function ResolverAsignacionModal({ asig, onClose }: { asig: Asignacion | null; o
   const [estado, setEstado] = useState<EstadoIncidencia>("En proceso");
   const [detalle, setDetalle] = useState("");
 
-  const submit = () => {
+  const submit = async () => {
     if (!asig) return;
     if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
-    store.updateAsignacion(asig.id, { estado });
-    toast.success(`Incidencia marcada como ${estado}`);
-    setDetalle(""); setEstado("En proceso"); onClose();
+    try {
+      await store.updateAsignacion(asig.id, { estado });
+      toast.success(`Incidencia marcada como ${estado}`);
+      setDetalle(""); setEstado("En proceso"); onClose();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al resolver incidencia");
+    }
   };
 
   return (
@@ -203,12 +207,16 @@ function ResolverReporteModal({ rep, onClose }: { rep: ReportePasante | null; on
   const [estado, setEstado] = useState<"Visto" | "Resuelto">("Visto");
   const [detalle, setDetalle] = useState("");
 
-  const submit = () => {
+  const submit = async () => {
     if (!rep) return;
     if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
-    store.updateReportePasante(rep.id, { estado });
-    toast.success(`Incidencia marcada como ${estado}`);
-    setDetalle(""); setEstado("Visto"); onClose();
+    try {
+      await store.updateReportePasante(rep.id, { estado });
+      toast.success(`Incidencia marcada como ${estado}`);
+      setDetalle(""); setEstado("Visto"); onClose();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al resolver reporte");
+    }
   };
 
   return (

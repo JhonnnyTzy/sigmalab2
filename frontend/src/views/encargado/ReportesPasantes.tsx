@@ -21,13 +21,23 @@ export function ReportesPasantesView() {
     && (!estadoF || r.estado === estadoF),
   );
 
-  const marcarResuelto = (r: ReportePasante) => {
-    store.updateReportePasante(r.id, { estado: "Resuelto" });
-    toast.success(`Reporte "${r.titulo}" marcado como resuelto`);
-    setOpen(null);
+  const marcarResuelto = async (r: ReportePasante) => {
+    try {
+      await store.updateReportePasante(r.id, { estado: "Resuelto" });
+      toast.success(`Reporte "${r.titulo}" marcado como resuelto`);
+      setOpen(null);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al marcar resuelto");
+    }
   };
-  const marcarVisto = (r: ReportePasante) => {
-    if (r.estado === "Nuevo") store.updateReportePasante(r.id, { estado: "Visto" });
+  const marcarVisto = async (r: ReportePasante) => {
+    if (r.estado === "Nuevo") {
+      try {
+        await store.updateReportePasante(r.id, { estado: "Visto" });
+      } catch (e: any) {
+        toast.error(e?.response?.data?.error || "Error al marcar visto");
+      }
+    }
   };
 
   return (

@@ -60,9 +60,10 @@ export function ReportesPreventivoView() {
     dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
   };
 
-  const enviar = () => {
+  const enviar = async () => {
     if (!form.titulo.trim() || !form.descripcion.trim() || !form.laboratorio) { toast.error("Título, descripción y laboratorio son requeridos"); return; }
-    store.addReportePasante({
+    try {
+      await store.addReportePasante({
       id: `RP-${Date.now()}`,
       pasante: getSessionUsername(user),
       pasanteId: user?.id,
@@ -71,12 +72,15 @@ export function ReportesPreventivoView() {
       fecha: new Date().toLocaleDateString("es-BO"),
       estado: "Nuevo",
     });
-    toast.success("Reporte enviado al Encargado ITIC");
-    dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
-    dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
-    dispatch({ type: "SET_FIELD", field: "ubicacion", value: "" });
-    setUsarOtro(false);
-    setTituloAbierto(true);
+      toast.success("Reporte enviado al Encargado ITIC");
+      dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
+      dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
+      dispatch({ type: "SET_FIELD", field: "ubicacion", value: "" });
+      setUsarOtro(false);
+      setTituloAbierto(true);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Error al enviar reporte");
+    }
   };
 
   const misReportes = reportes.filter((r) => r.pasanteId === user?.id);
