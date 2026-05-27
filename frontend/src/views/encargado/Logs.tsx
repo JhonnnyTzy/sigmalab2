@@ -42,7 +42,7 @@ export function LogsView() {
   const userMap = useMemo(() => {
     const map = new Map<string, { full: string; rol: string; nombres: string; paterno: string; materno: string }>();
     usuarios.forEach((u) => {
-      const s = splitNombre(u.nombre);
+      const s = u.nombres ? { nombres: u.nombres, paterno: u.paterno ?? "", materno: u.materno ?? "" } : splitNombre(u.nombre);
       map.set(u.username, { full: u.nombre, rol: u.rol, ...s });
     });
     return map;

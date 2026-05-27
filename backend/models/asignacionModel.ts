@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllAsignaciones(params?: { tecnicoId?: string; estado?: string; equipoCodigo?: string }) {
   return prisma.asignacion.findMany({
     where: {
+      activo: true,
       ...(params?.tecnicoId && { tecnicoId: params.tecnicoId }),
       ...(params?.estado && { estado: params.estado }),
       ...(params?.equipoCodigo && { equipoCodigo: params.equipoCodigo }),
@@ -45,4 +46,10 @@ export async function updateAsignacion(id: string, data: Partial<{
   const existing = await prisma.asignacion.findUnique({ where: { id } });
   if (!existing) throw new AppError("Asignación no encontrada", 404);
   return prisma.asignacion.update({ where: { id }, data, include: { equipo: true, tecnico: { include: { persona: true } } } });
+}
+
+export async function deleteAsignacion(id: string) {
+  const existing = await prisma.asignacion.findUnique({ where: { id } });
+  if (!existing) throw new AppError("Asignación no encontrada", 404);
+  await prisma.asignacion.update({ where: { id }, data: { activo: false } });
 }

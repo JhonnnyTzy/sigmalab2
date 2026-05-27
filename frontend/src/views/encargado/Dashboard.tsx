@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Monitor, AlertCircle, XCircle, Users } from "lucide-react";
+import { Monitor, AlertCircle, XCircle, Users, AlertTriangle, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { MetricCard } from "@/components/sigmalab/MetricCard";
 import { Panel } from "@/components/sigmalab/Panel";
@@ -16,6 +16,7 @@ export function EncargadoDashboard() {
   const mantenimientos = useStore((s) => s.mantenimientos);
   const labs = useStore((s) => s.labs);
   const usuarios = useStore((s) => s.usuarios);
+  const reportes = useStore((s) => s.reportesPasante);
   const detalles = useStore((s) => s.detalles);
 
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes">("mes");
@@ -29,6 +30,8 @@ export function EncargadoDashboard() {
   const pasantesActivos = usuarios.filter(
     (u) => u.estado === "Activo" && (u.rol === "Pasante Preventivo" || u.rol === "Pasante Correctivo"),
   ).length;
+  const incidenciasNuevas = reportes.filter((r) => r.estado === "Nuevo").length;
+  const incidenciasEnProceso = reportes.filter((r) => r.estado === "En proceso" || r.estado === "Pendiente").length;
 
   // Mant por laboratorio (real, desde mantenimientos)
   const mantPorLab = useMemo(() => {
@@ -102,11 +105,13 @@ export function EncargadoDashboard() {
       </div>
 
       {/* Row 1 — KPIs principales */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
         <button type="button" onClick={() => setView("equipos")} className="text-left"><MetricCard title="Total Equipos" value={totalEquipos} icon={Monitor} accent="teal" /></button>
         <button type="button" onClick={() => setView("usuarios")} className="text-left"><MetricCard title="Pasantes activos" value={pasantesActivos} icon={Users} accent="info" /></button>
-        <button type="button" onClick={() => setView("equipos")} className="text-left"><MetricCard title="Equipos en mantenimiento" value={enMant} icon={AlertCircle} accent="warning" /></button>
-        <button type="button" onClick={() => setView("equipos")} className="text-left"><MetricCard title="Equipos dados de baja" value={deBaja} icon={XCircle} accent="danger" /></button>
+        <button type="button" onClick={() => setView("equipos")} className="text-left"><MetricCard title="En mantenimiento" value={enMant} icon={AlertCircle} accent="warning" /></button>
+        <button type="button" onClick={() => setView("equipos")} className="text-left"><MetricCard title="De baja" value={deBaja} icon={XCircle} accent="danger" /></button>
+        <button type="button" onClick={() => setView("incidencias-bandeja")} className="text-left"><MetricCard title="Incidencias nuevas" value={incidenciasNuevas} icon={Inbox} accent="danger" /></button>
+        <button type="button" onClick={() => setView("incidencias-bandeja")} className="text-left"><MetricCard title="Incidencias en proceso" value={incidenciasEnProceso} icon={AlertTriangle} accent="warning" /></button>
       </div>
 
       <EncargadoCharts

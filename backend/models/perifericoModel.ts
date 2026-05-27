@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllPerifericos(params?: { laboratorioId?: string; tipo?: string; estado?: string }) {
   return prisma.periferico.findMany({
     where: {
+      activo: true,
       ...(params?.laboratorioId && { laboratorioId: params.laboratorioId }),
       ...(params?.tipo && { tipo: params.tipo }),
       ...(params?.estado && { estado: params.estado }),
@@ -38,5 +39,5 @@ export async function updatePeriferico(id: string, data: Partial<{
 export async function deletePeriferico(id: string) {
   const existing = await prisma.periferico.findUnique({ where: { id } });
   if (!existing) throw new AppError("Periférico no encontrado", 404);
-  await prisma.periferico.delete({ where: { id } });
+  await prisma.periferico.update({ where: { id }, data: { activo: false } });
 }

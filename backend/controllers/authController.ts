@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as authModel from "../models/authModel";
+import { createLog } from "../models/logModel";
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
@@ -40,6 +41,14 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
 export async function removeUser(req: Request, res: Response, next: NextFunction) {
   try {
     await authModel.deleteUser(req.params.id);
+    createLog({
+      usuarioId: req.user?.userId,
+      accion: "Eliminar usuario",
+      detalle: `Se eliminó usuario ${req.params.id}`,
+      modulo: "Usuarios",
+      entidad: req.params.id,
+      tipoAccion: "Eliminar",
+    }).catch(() => {});
     res.status(204).send();
   } catch (err) { next(err); }
 }

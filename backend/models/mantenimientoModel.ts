@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllMantenimientos(params?: { tipoId?: string; estadoId?: string; equipoCodigo?: string; tecnicoId?: string; laboratorioId?: string }) {
   return prisma.mantenimiento.findMany({
     where: {
+      activo: true,
       ...(params?.tipoId && { tipoId: params.tipoId }),
       ...(params?.estadoId && { estadoId: params.estadoId }),
       ...(params?.equipoCodigo && { equipoCodigo: params.equipoCodigo }),
@@ -93,13 +94,13 @@ export async function updateMantenimiento(id: string, data: Partial<{
 export async function deleteMantenimiento(id: string) {
   const existing = await prisma.mantenimiento.findUnique({ where: { id } });
   if (!existing) throw new AppError("Mantenimiento no encontrado", 404);
-  await prisma.mantenimiento.delete({ where: { id } });
+  await prisma.mantenimiento.update({ where: { id }, data: { activo: false } });
 }
 
 export async function getMantenimientoStats() {
-  const porTipo = await prisma.mantenimiento.groupBy({ by: ["tipoId"], _count: { tipoId: true } });
-  const porEstado = await prisma.mantenimiento.groupBy({ by: ["estadoId"], _count: { estadoId: true } });
-  const porLab = await prisma.mantenimiento.groupBy({ by: ["laboratorioId"], _count: { laboratorioId: true } });
+  const porTipo = await prisma.mantenimiento.groupBy({ by: ["tipoId"], where: { activo: true }, _count: { tipoId: true } });
+  const porEstado = await prisma.mantenimiento.groupBy({ by: ["estadoId"], where: { activo: true }, _count: { estadoId: true } });
+  const porLab = await prisma.mantenimiento.groupBy({ by: ["laboratorioId"], where: { activo: true }, _count: { laboratorioId: true } });
 
   const tipos = await prisma.tipoMantenimiento.findMany();
   const estados = await prisma.estadoMantenimiento.findMany();
@@ -115,7 +116,7 @@ export async function getMantenimientoStats() {
     porTipo: mapObj(porTipo, tipos),
     porEstado: mapObj(porEstado, estados),
     porLaboratorio: mapObj(porLab, labs),
-    total: await prisma.mantenimiento.count(),
+    total: await prisma.mantenimiento.count({ where: { activo: true } }),
   };
 }
 

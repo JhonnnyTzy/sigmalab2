@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as mantenimientoModel from "../models/mantenimientoModel";
+import { createLog } from "../models/logModel";
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
   try {
@@ -37,6 +38,14 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await mantenimientoModel.deleteMantenimiento(req.params.id);
+    createLog({
+      usuarioId: req.user?.userId,
+      accion: "Eliminar mantenimiento",
+      detalle: `Se eliminó mantenimiento ${req.params.id}`,
+      modulo: "Mantenimientos",
+      entidad: req.params.id,
+      tipoAccion: "Eliminar",
+    }).catch(() => {});
     res.status(204).send();
   } catch (err) { next(err); }
 }

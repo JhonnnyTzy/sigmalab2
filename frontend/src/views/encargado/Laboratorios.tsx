@@ -20,25 +20,37 @@ export function LaboratoriosView() {
   const openCreate = () => { setForm({ ...EMPTY, id: `LAB${labs.length + 1}` }); setCreating(true); };
   const openEdit = (l: Laboratorio) => { setForm(l); setEditing(l); };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.id || !form.nombre) { toast.error("ID y Nombre son requeridos"); return; }
     if (creating) {
       if (labs.some((l) => l.id === form.id)) { toast.error("ID ya existe"); return; }
-      store.addLab(form);
-      toast.success("Laboratorio creado");
-      setCreating(false);
+      try {
+        await store.addLab(form);
+        toast.success("Laboratorio creado");
+        setCreating(false);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al crear laboratorio");
+      }
     } else if (editing) {
-      store.updateLab(editing.id, form);
-      toast.success("Laboratorio actualizado");
-      setEditing(null);
+      try {
+        await store.updateLab(editing.id, form);
+        toast.success("Laboratorio actualizado");
+        setEditing(null);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al actualizar laboratorio");
+      }
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting) return;
-    store.deleteLab(deleting.id);
-    toast.success(`Laboratorio ${deleting.nombre} eliminado`);
-    setDeleting(null);
+    try {
+      await store.deleteLab(deleting.id);
+      toast.success(`Laboratorio ${deleting.nombre} eliminado`);
+      setDeleting(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al eliminar laboratorio");
+    }
   };
 
   const FormBody = (

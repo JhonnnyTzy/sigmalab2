@@ -14,6 +14,7 @@ export interface AuthAccount {
   email?: string;
   registro?: string;
   celular?: string;
+  activo?: boolean;
 }
 
 export interface SessionUser {
@@ -134,6 +135,12 @@ export const auth = {
     localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(accounts));
     notify();
   },
+
+  setAccounts(accs: AuthAccount[]) {
+    accounts = accs;
+    localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(accounts));
+    notify();
+  },
 };
 
 export function useAuth() {
@@ -168,9 +175,21 @@ export function useIsReadOnly(): boolean {
 
 /** Maps session user IDs to mock data usernames for assignment filtering */
 export const USERNAME_MAP: Record<string, string> = {
-  "u-admin": "rescobar",
-  "u-corr": "jarias",
-  "u-prev": "ysarzuri",
+  "u-admin":    "rescobar",
+  "u-docente":  "projas",
+  "u-prev":     "ysarzuri",
+  "u-prev2":    "cmendoza",
+  "u-corr":     "jarias",
+  "u-corr2":    "mquispe",
+  "u-doc1":     "jmamani",
+  "u-doc2":     "mvargas",
+  "u-doc3":     "pquispe",
+  "u-doc4":     "acondori",
+  "u-doc5":     "lflores",
+  "u-est":      "lmendoza",
+  "u-est2":     "rhuanca",
+  "u-est3":     "ctorrez",
+  "u-invitado":  "vdemo",
 };
 
 export function getSessionUsername(user: SessionUser | null): string {

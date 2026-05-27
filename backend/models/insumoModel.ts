@@ -3,6 +3,7 @@ import { AppError } from "../middlewares/errorHandler";
 
 export async function findAllInsumos() {
   return prisma.insumo.findMany({
+    where: { activo: true },
     orderBy: { nombre: "asc" },
   });
 }
@@ -34,12 +35,12 @@ export async function updateInsumo(nombre: string, data: Partial<{
 export async function deleteInsumo(nombre: string) {
   const existing = await prisma.insumo.findUnique({ where: { nombre } });
   if (!existing) throw new AppError("Insumo no encontrado", 404);
-  await prisma.insumo.delete({ where: { nombre } });
+  await prisma.insumo.update({ where: { nombre }, data: { activo: false } });
 }
 
 export async function getInsumosBajoStock() {
   return prisma.insumo.findMany({
-    where: { stock: { lte: prisma.insumo.fields.stockMinimo } },
+    where: { activo: true, stock: { lte: prisma.insumo.fields.stockMinimo } },
     orderBy: { stock: "asc" },
   });
 }

@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllIncidencias(params?: { estadoId?: string; equipoCodigo?: string; laboratorioId?: string; usuarioId?: string }) {
   return prisma.incidencia.findMany({
     where: {
+      activo: true,
       ...(params?.estadoId && { estadoId: params.estadoId }),
       ...(params?.equipoCodigo && { equipoCodigo: params.equipoCodigo }),
       ...(params?.laboratorioId && { laboratorioId: params.laboratorioId }),
@@ -72,13 +73,13 @@ export async function updateIncidencia(id: string, data: Partial<{
 }
 
 export async function getIncidenciaStats() {
-  const porEstado = await prisma.incidencia.groupBy({ by: ["estadoId"], _count: { estadoId: true } });
+  const porEstado = await prisma.incidencia.groupBy({ by: ["estadoId"], where: { activo: true }, _count: { estadoId: true } });
   const estados = await prisma.estadoIncidencia.findMany();
   return {
     porEstado: porEstado.map((r) => ({
       nombre: estados.find((e) => e.id === r.estadoId)?.nombre || r.estadoId,
       total: r._count.estadoId,
     })),
-    total: await prisma.incidencia.count(),
+    total: await prisma.incidencia.count({ where: { activo: true } }),
   };
 }

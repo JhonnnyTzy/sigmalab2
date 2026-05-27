@@ -155,7 +155,7 @@ export function InventarioView() {
     dispatchModal({ type: "SET_FIELD", field: "editing", value: it });
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.codItic || !form.numeroSerie || !form.marca || !form.modelo) {
       toast.error("Cod. ITIC, N° serie, marca y modelo son requeridos");
       return;
@@ -173,20 +173,28 @@ export function InventarioView() {
       laboratorio: form.laboratorio || undefined,
       observaciones: form.observaciones || undefined,
     };
-    if (modal.creating) { store.addInventario(clean); toast.success("Ítem agregado al inventario"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false }); }
-    else if (modal.editing) { store.updateInventario(modal.editing.id, clean); toast.success("Ítem actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null }); }
+    try {
+      if (modal.creating) { await store.addInventario(clean); toast.success("Ítem agregado al inventario"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false }); }
+      else if (modal.editing) { await store.updateInventario(modal.editing.id, clean); toast.success("Ítem actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null }); }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al guardar ítem");
+    }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!modal.deleting) return;
     if (modal.deleting.categoria === "Equipo de cómputo") {
       toast.error("Los equipos de cómputo se gestionan desde la sección Equipos");
       dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
       return;
     }
-    store.deleteInventario(modal.deleting.id);
-    toast.success("Ítem eliminado");
-    dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    try {
+      await store.deleteInventario(modal.deleting.id);
+      toast.success("Ítem eliminado");
+      dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al eliminar ítem");
+    }
   };
 
   const clearFilters = () => {
@@ -567,9 +575,16 @@ function InventarioModals({ modal, dispatchModal, FormBody, submit, confirmDelet
                 </div>
                 <input
                   type="number" min={0} defaultValue={s.minimo}
-                  onBlur={(e) => {
+                  onBlur={async (e) => {
                     const n = Math.max(0, Number(e.target.value) || 0);
-                    if (n !== s.minimo) { store.setStockMinimo(s.categoria, n); toast.success(`Mínimo: ${s.categoria} → ${n}`); }
+                    if (n !== s.minimo) {
+                      try {
+                        await store.setStockMinimo(s.categoria, n);
+                        toast.success(`Mínimo: ${s.categoria} → ${n}`);
+                      } catch (err: any) {
+                        toast.error(err?.response?.data?.error || "Error al actualizar stock mínimo");
+                      }
+                    }
                   }}
                   className={cn(inputCls, "w-24")}
                   aria-label={`Stock mínimo para ${s.categoria}`}

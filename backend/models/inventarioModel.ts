@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllInventario(params?: { categoriaId?: string; estado?: string; laboratorioId?: string }) {
   return prisma.inventarioItem.findMany({
     where: {
+      activo: true,
       ...(params?.categoriaId && { categoriaId: params.categoriaId }),
       ...(params?.estado && { estado: params.estado }),
       ...(params?.laboratorioId && { laboratorioId: params.laboratorioId }),
@@ -64,11 +65,11 @@ export async function updateInventarioItem(id: string, data: Partial<{
 export async function deleteInventarioItem(id: string) {
   const existing = await prisma.inventarioItem.findUnique({ where: { id } });
   if (!existing) throw new AppError("Ítem no encontrado", 404);
-  await prisma.inventarioItem.delete({ where: { id } });
+  await prisma.inventarioItem.update({ where: { id }, data: { activo: false } });
 }
 
 export async function getInventarioStats() {
-  const porCategoria = await prisma.inventarioItem.groupBy({ by: ["categoriaId"], _count: { categoriaId: true } });
+  const porCategoria = await prisma.inventarioItem.groupBy({ by: ["categoriaId"], where: { activo: true }, _count: { categoriaId: true } });
   const categorias = await prisma.categoriaInventario.findMany();
   return {
     porCategoria: porCategoria.map((r) => ({
@@ -76,6 +77,6 @@ export async function getInventarioStats() {
       total: r._count.categoriaId,
       stockMinimo: categorias.find((c) => c.id === r.categoriaId)?.stockMinimo || 0,
     })),
-    total: await prisma.inventarioItem.count(),
+    total: await prisma.inventarioItem.count({ where: { activo: true } }),
   };
 }

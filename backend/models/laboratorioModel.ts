@@ -3,6 +3,7 @@ import { AppError } from "../middlewares/errorHandler";
 
 export async function findAllLaboratorios() {
   return prisma.laboratorio.findMany({
+    where: { activo: true },
     include: {
       edificio: true,
       _count: { select: { equipos: true, incidencias: true } },
@@ -65,5 +66,5 @@ export async function updateLaboratorio(id: string, data: Partial<{
 export async function deleteLaboratorio(id: string) {
   const existing = await prisma.laboratorio.findUnique({ where: { id } });
   if (!existing) throw new AppError("Laboratorio no encontrado", 404);
-  await prisma.laboratorio.delete({ where: { id } });
+  await prisma.laboratorio.update({ where: { id }, data: { activo: false } });
 }

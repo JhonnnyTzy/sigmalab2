@@ -12,5 +12,6 @@ router.get("/", asignacionController.getAll);
 router.get("/:id", asignacionController.getById);
 router.post("/", authorize("encargado"), validate(createAsignacionSchema), asignacionController.create);
 router.patch("/:id", authorize("encargado", "correctivo"), validate(updateAsignacionSchema), asignacionController.update);
+router.delete("/:id", authorize("encargado"), asignacionController.remove);
 
 export default router;

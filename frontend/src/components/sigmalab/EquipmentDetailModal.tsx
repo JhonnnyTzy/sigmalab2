@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   equipo: Equipo | null;
+  initialTab?: string;
 }
 
 const TABS = [
@@ -30,10 +31,16 @@ const FALLBACK_HISTORIAL = [
   { tipo: "Preventivo" as const, fecha: "10/10/2025", tecnico: "Yennifer Sarzuri" },
 ];
 
-export function EquipmentDetailModal({ open, onOpenChange, equipo }: Props) {
+export function EquipmentDetailModal({ open, onOpenChange, equipo, initialTab = "info" }: Props) {
   const [tab, setTab] = useState("info");
   const [detalleSel, setDetalleSel] = useState<MantDetalle | null>(null);
   const detallesAll = useStore((s) => s.detalles);
+  const prevOpen = useRef(open);
+
+  useEffect(() => {
+    if (open && !prevOpen.current) setTab(initialTab);
+    prevOpen.current = open;
+  }, [open, initialTab]);
 
   if (!equipo) return null;
   const historialReal = detallesAll.filter((d) => d.equipo === equipo.codigo);

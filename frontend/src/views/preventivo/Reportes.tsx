@@ -1,6 +1,6 @@
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
-import { Send, Inbox, CheckCircle2 } from "lucide-react";
+import { Send, Inbox, CheckCircle2, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
 import { FormField, inputCls } from "@/components/sigmalab/Modal";
 import { store, useStore } from "@/lib/store";
@@ -9,6 +9,21 @@ import { cn } from "@/lib/utils";
 
 const CATEGORIAS = ["Red", "Hardware", "Software", "Mobiliario", "Limpieza", "Eléctrico", "Otro"];
 const ESTADO: Record<string, string> = { Nuevo: "bg-info-soft text-info", Visto: "bg-slate-100 text-slate-600", Resuelto: "bg-success-soft text-success" };
+
+const TITULOS_COMUNES = [
+  { titulo: "Cables de red desconectados", categoria: "Red" },
+  { titulo: "Equipo no enciende", categoria: "Hardware" },
+  { titulo: "Pantalla azul intermitente", categoria: "Software" },
+  { titulo: "Ventilador con ruido excesivo", categoria: "Hardware" },
+  { titulo: "Lentitud al cargar el sistema", categoria: "Software" },
+  { titulo: "Equipo sobrecalentado", categoria: "Hardware" },
+  { titulo: "Periférico no funciona", categoria: "Hardware" },
+  { titulo: "Limpieza general requerida", categoria: "Limpieza" },
+  { titulo: "Pasta térmica necesita cambio", categoria: "Hardware" },
+  { titulo: "Mobiliario dañado", categoria: "Mobiliario" },
+  { titulo: "Problema eléctrico", categoria: "Eléctrico" },
+  { titulo: "Actualización de software pendiente", categoria: "Software" },
+];
 
 const EJEMPLOS = [
   "Cables de red desconectados detrás del rack del lab 1, piso 3",
@@ -21,6 +36,8 @@ export function ReportesPreventivoView() {
   const { user } = useAuth();
   const labs = useStore((s) => s.labs);
   const reportes = useStore((s) => s.reportesPasante);
+  const [tituloAbierto, setTituloAbierto] = useState(true);
+  const [usarOtro, setUsarOtro] = useState(false);
   const [form, dispatch] = useReducer(
     (state: any, action: { type: string; field?: string; value?: any }) => {
       switch (action.type) {
@@ -31,11 +48,25 @@ export function ReportesPreventivoView() {
     { titulo: "", descripcion: "", laboratorio: "", ubicacion: "", categoria: "Hardware", prioridad: "Media" as "Alta" | "Media" | "Baja" }
   );
 
+  const seleccionarTitulo = (t: string, cat: string) => {
+    dispatch({ type: "SET_FIELD", field: "titulo", value: t });
+    dispatch({ type: "SET_FIELD", field: "categoria", value: cat });
+    setUsarOtro(false);
+    setTituloAbierto(false);
+  };
+
+  const elegirOtro = () => {
+    setUsarOtro(true);
+    dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
+  };
+
   const enviar = () => {
     if (!form.titulo.trim() || !form.descripcion.trim() || !form.laboratorio) { toast.error("Título, descripción y laboratorio son requeridos"); return; }
     store.addReportePasante({
       id: `RP-${Date.now()}`,
       pasante: getSessionUsername(user),
+      pasanteId: user?.id,
+      rolReporte: user?.role,
       titulo: form.titulo, descripcion: form.descripcion, laboratorio: form.laboratorio, ubicacion: form.ubicacion, categoria: form.categoria, prioridad: form.prioridad,
       fecha: new Date().toLocaleDateString("es-BO"),
       estado: "Nuevo",
@@ -44,9 +75,11 @@ export function ReportesPreventivoView() {
     dispatch({ type: "SET_FIELD", field: "titulo", value: "" });
     dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
     dispatch({ type: "SET_FIELD", field: "ubicacion", value: "" });
+    setUsarOtro(false);
+    setTituloAbierto(true);
   };
 
-  const misReportes = reportes.filter((r) => r.pasante === getSessionUsername(user));
+  const misReportes = reportes.filter((r) => r.pasanteId === user?.id);
 
   return (
     <div className="space-y-6">
@@ -60,7 +93,45 @@ export function ReportesPreventivoView() {
           <Panel title="Nuevo reporte">
             <div className="space-y-4">
               <FormField label="Título" required>
-                <input value={form.titulo} onChange={(e) => dispatch({ type: "SET_FIELD", field: "titulo", value: e.target.value })} placeholder="Ej. Cables de red desconectados en Lab 1" className={inputCls} aria-label="Título" />
+                <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <button type="button" onClick={() => setTituloAbierto(!tituloAbierto)} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-navy hover:bg-slate-50">
+                    {tituloAbierto ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+                    {usarOtro || (!form.titulo && !tituloAbierto) ? "Selecciona un título..." : <span className="truncate">{form.titulo}</span>}
+                  </button>
+                  {tituloAbierto && (
+                    <div className="p-1">
+                      <div className="grid grid-cols-1 gap-0.5">
+                        {TITULOS_COMUNES.map((t) => (
+                          <button type="button" key={t.titulo} onClick={() => seleccionarTitulo(t.titulo, t.categoria)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                              form.titulo === t.titulo ? "bg-teal-soft text-teal font-semibold" : "text-navy hover:bg-slate-50"
+                            )}>
+                            <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+                            <span className="flex-1">{t.titulo}</span>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{t.categoria}</span>
+                          </button>
+                        ))}
+                        <div className="border-t border-slate-100 pt-0.5">
+                          <button type="button" onClick={elegirOtro}
+                            className={cn(
+                              "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                              usarOtro ? "bg-teal-soft text-teal font-semibold" : "text-navy hover:bg-slate-50"
+                            )}>
+                            <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+                            <span>Otro</span>
+                          </button>
+                        </div>
+                      </div>
+                      {usarOtro && (
+                        <div className="border-t border-slate-100 p-2">
+                          <input value={form.titulo} onChange={(e) => dispatch({ type: "SET_FIELD", field: "titulo", value: e.target.value })}
+                            placeholder="Escribe el título del reporte..." className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm" aria-label="Título personalizado" autoFocus />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </FormField>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField label="Laboratorio" required>

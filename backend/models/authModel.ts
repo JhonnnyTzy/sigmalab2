@@ -9,6 +9,7 @@ export interface LoginResult {
   user: {
     id: string;
     roleId: string;
+    role: string;
     nombres: string;
     paterno: string;
     materno?: string | null;
@@ -33,7 +34,7 @@ export async function loginUser(identifier: string, password: string): Promise<L
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new AppError("Contraseña incorrecta", 401);
 
-  const payload = { userId: user.id, roleId: user.roleId };
+  const payload = { userId: user.id, role: user.roleId };
   const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions);
 
   return {
@@ -79,16 +80,39 @@ export async function getProfile(userId: string) {
 }
 
 export async function createUser(data: {
-  personaId: string;
+  personaId?: string;
   roleId: string;
   password: string;
+  nombres: string;
+  paterno: string;
+  materno?: string;
+  email?: string;
+  registro?: string;
+  celular?: string;
 }) {
   const hashed = await bcrypt.hash(data.password, 12);
+
+  // Create Persona first if personaId not provided
+  let personaId = data.personaId;
+  if (!personaId) {
+    const persona = await prisma.persona.create({
+      data: {
+        id: `P-${Date.now()}`,
+        nombres: data.nombres,
+        paterno: data.paterno,
+        materno: data.materno || null,
+        email: data.email || null,
+        registroUniversitario: data.registro || null,
+        celular: data.celular || null,
+      },
+    });
+    personaId = persona.id;
+  }
 
   const user = await prisma.usuario.create({
     data: {
       id: `u-${Date.now()}`,
-      personaId: data.personaId,
+      personaId,
       roleId: data.roleId,
       passwordHash: hashed,
     },
@@ -140,7 +164,7 @@ export async function updateUser(id: string, data: Partial<{ roleId: string; act
 export async function deleteUser(id: string) {
   const existing = await prisma.usuario.findUnique({ where: { id } });
   if (!existing) throw new AppError("Usuario no encontrado", 404);
-  await prisma.usuario.delete({ where: { id } });
+  await prisma.usuario.update({ where: { id }, data: { activo: false } });
 }
 
 export async function updateProfile(userId: string, data: {

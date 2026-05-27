@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as equipoModel from "../models/equipoModel";
+import { createLog } from "../models/logModel";
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
   try {
@@ -32,6 +33,14 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await equipoModel.deleteEquipo(req.params.codigo);
+    createLog({
+      usuarioId: req.user?.userId,
+      accion: "Eliminar equipo",
+      detalle: `Se eliminó equipo ${req.params.codigo}`,
+      modulo: "Equipos",
+      entidad: req.params.codigo,
+      tipoAccion: "Eliminar",
+    }).catch(() => {});
     res.status(204).send();
   } catch (err) { next(err); }
 }

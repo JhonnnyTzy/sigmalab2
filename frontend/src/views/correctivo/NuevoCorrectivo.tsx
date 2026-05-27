@@ -129,7 +129,7 @@ export function NuevoCorrectivoView() {
 
   const tituloFinal = form.problemaTitulo === "Otro" ? (form.problemaCustom.trim() || "Otro") : form.problemaTitulo;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.equipo) { toast.error("Selecciona un equipo"); return; }
     if (!form.descripcion.trim() && form.estado !== "Pendiente") { toast.error("Agrega una descripción del problema"); return; }
     const fechaFmt = form.fecha.split("-").reverse().join("/");
@@ -141,42 +141,46 @@ export function NuevoCorrectivoView() {
     }, [] as { insumo: string; cantidad: string; unidad: string }[]);
     const problema = tituloFinal ? `${tituloFinal}${form.descripcion ? ` — ${form.descripcion}` : ""}` : form.descripcion;
 
-    if (editKey) {
-      store.updateCorrectivo(
-        editKey,
-        { problema, accion: form.accion || "—", estado: form.estado, fecha: fechaFmt },
-        { tipoIncidencia: form.tipo, diagnostico: form.diagnostico, componentes: compFinales, insumos: insumosClean, observaciones: form.observaciones, descripcion: form.descripcion, accion: form.accion, resolucion: form.estado },
-      );
-      toast.success("Mantenimiento actualizado");
-    } else {
-      store.addCorrectivo(
-        { fecha: fechaFmt, equipo: form.equipo, problema, accion: form.accion || "—", estado: form.estado, tecnico },
-        form.equipo, equipoObj?.estado ?? "En mantenimiento",
-        { tipoIncidencia: form.tipo, diagnostico: form.diagnostico, componentes: compFinales, insumos: insumosClean, observaciones: form.observaciones, descripcion: form.descripcion, resolucion: form.estado },
-      );
-      toast.success(form.estado === "Pendiente" ? "Avance guardado como pendiente" : "Mantenimiento registrado");
+    try {
+      if (editKey) {
+        await store.updateCorrectivo(
+          editKey,
+          { problema, accion: form.accion || "—", estado: form.estado, fecha: fechaFmt },
+          { tipoIncidencia: form.tipo, diagnostico: form.diagnostico, componentes: compFinales, insumos: insumosClean, observaciones: form.observaciones, descripcion: form.descripcion, accion: form.accion, resolucion: form.estado },
+        );
+        toast.success("Mantenimiento actualizado");
+      } else {
+        await store.addCorrectivo(
+          { fecha: fechaFmt, equipo: form.equipo, problema, accion: form.accion || "—", estado: form.estado, tecnico },
+          form.equipo, equipoObj?.estado ?? "En mantenimiento",
+          { tipoIncidencia: form.tipo, diagnostico: form.diagnostico, componentes: compFinales, insumos: insumosClean, observaciones: form.observaciones, descripcion: form.descripcion, resolucion: form.estado },
+        );
+        toast.success(form.estado === "Pendiente" ? "Avance guardado como pendiente" : "Mantenimiento registrado");
+      }
+      if (asignacionRef.current) {
+        await store.updateAsignacion(asignacionRef.current, { estado: form.estado });
+        setEditKey(null); asignacionRef.current = null;
+      } else {
+        const asig = asignaciones.find((a) => a.equipo === form.equipo && a.asignadoA === username && a.estado !== "Completado");
+        if (asig) await store.updateAsignacion(asig.id, { estado: form.estado });
+      }
+      // limpiar
+      setEditKey(null);
+      dispatch({ type: "SET_FIELD", field: "equipo", value: "" });
+      dispatch({ type: "SET_FIELD", field: "busq", value: "" });
+      dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
+      dispatch({ type: "SET_FIELD", field: "diagnostico", value: "" });
+      dispatch({ type: "SET_FIELD", field: "accion", value: "" });
+      dispatch({ type: "SET_FIELD", field: "observaciones", value: "" });
+      dispatch({ type: "SET_FIELD", field: "problemaTitulo", value: "" });
+      dispatch({ type: "SET_FIELD", field: "problemaCustom", value: "" });
+      dispatch({ type: "SET_FIELD", field: "componentes", value: [] });
+      dispatch({ type: "SET_FIELD", field: "otroComp", value: "" });
+      dispatch({ type: "SET_FIELD", field: "insumos", value: [{ insumo: "" }] });
+      dispatch({ type: "SET_FIELD", field: "estado", value: "En proceso" });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al guardar mantenimiento");
     }
-    if (asignacionRef.current) {
-      store.updateAsignacion(asignacionRef.current, { estado: form.estado });
-      setEditKey(null); asignacionRef.current = null;
-    } else {
-      const asig = asignaciones.find((a) => a.equipo === form.equipo && a.asignadoA === username && a.estado !== "Completado");
-      if (asig) store.updateAsignacion(asig.id, { estado: form.estado });
-    }
-    // limpiar
-    setEditKey(null);
-    dispatch({ type: "SET_FIELD", field: "equipo", value: "" });
-    dispatch({ type: "SET_FIELD", field: "busq", value: "" });
-    dispatch({ type: "SET_FIELD", field: "descripcion", value: "" });
-    dispatch({ type: "SET_FIELD", field: "diagnostico", value: "" });
-    dispatch({ type: "SET_FIELD", field: "accion", value: "" });
-    dispatch({ type: "SET_FIELD", field: "observaciones", value: "" });
-    dispatch({ type: "SET_FIELD", field: "problemaTitulo", value: "" });
-    dispatch({ type: "SET_FIELD", field: "problemaCustom", value: "" });
-    dispatch({ type: "SET_FIELD", field: "componentes", value: [] });
-    dispatch({ type: "SET_FIELD", field: "otroComp", value: "" });
-    dispatch({ type: "SET_FIELD", field: "insumos", value: [{ insumo: "" }] });
-    dispatch({ type: "SET_FIELD", field: "estado", value: "En proceso" });
   };
 
   return (

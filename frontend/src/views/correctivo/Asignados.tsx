@@ -45,23 +45,27 @@ export function AsignadosView() {
     return [...fromDetalles, ...fromHist];
   };
 
-  const atender = (a: Asignacion) => {
-    store.updateAsignacion(a.id, { estado: "En proceso" });
-    const [d, m, y] = a.fecha.split("/");
-    const fechaIso = (y && m && d) ? `${y}-${m}-${d}` : new Date().toISOString().slice(0, 10);
-    const now = new Date();
-    correctivoPrefill.set({
-      asignacionId: a.id,
-      equipo: a.equipo,
-      lab: a.lab,
-      descripcion: a.problema,
-      problemaTitulo: "Otro",
-      fecha: fechaIso,
-      hora: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-      estado: "En proceso",
-    });
-    toast.success(`Atendiendo ${a.equipo}`);
-    setView("nuevo-correctivo");
+  const atender = async (a: Asignacion) => {
+    try {
+      await store.updateAsignacion(a.id, { estado: "En proceso" });
+      const [d, m, y] = a.fecha.split("/");
+      const fechaIso = (y && m && d) ? `${y}-${m}-${d}` : new Date().toISOString().slice(0, 10);
+      const now = new Date();
+      correctivoPrefill.set({
+        asignacionId: a.id,
+        equipo: a.equipo,
+        lab: a.lab,
+        descripcion: a.problema,
+        problemaTitulo: "Otro",
+        fecha: fechaIso,
+        hora: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        estado: "En proceso",
+      });
+      toast.success(`Atendiendo ${a.equipo}`);
+      setView("nuevo-correctivo");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al actualizar asignación");
+    }
   };
 
   return (

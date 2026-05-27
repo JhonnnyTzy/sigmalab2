@@ -33,34 +33,42 @@ export function InsumosView() {
   );
   const [form, setForm] = useState<InsumoStock>(EMPTY);
 
-  const apply = (sign: 1 | -1) => {
+  const apply = async (sign: 1 | -1) => {
     if (!adjust.adjusting) return;
     const n = parseInt(adjust.delta, 10);
     if (isNaN(n) || n <= 0) { toast.error("Ingresa una cantidad válida"); return; }
     const newStock = Math.max(0, adjust.adjusting.stock + sign * n);
-    store.updateInsumo(adjust.adjusting.nombre, { stock: newStock });
-    toast.success(`Stock actualizado: ${adjust.adjusting.nombre} → ${newStock} ${adjust.adjusting.unidad}`);
-    dispatchAdjust({ type: "SET_FIELD", field: "adjusting", value: null }); dispatchAdjust({ type: "SET_FIELD", field: "delta", value: "" });
+    try {
+      await store.updateInsumo(adjust.adjusting.nombre, { stock: newStock });
+      toast.success(`Stock actualizado: ${adjust.adjusting.nombre} → ${newStock} ${adjust.adjusting.unidad}`);
+      dispatchAdjust({ type: "SET_FIELD", field: "adjusting", value: null }); dispatchAdjust({ type: "SET_FIELD", field: "delta", value: "" });
+    } catch { toast.error("Error al actualizar stock"); }
   };
 
   const openCreate = () => { setForm(EMPTY); dispatchModal({ type: "SET_FIELD", field: "creating", value: true }); };
   const openEdit = (i: InsumoStock) => { setForm(i); dispatchModal({ type: "SET_FIELD", field: "editing", value: i }); };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.nombre || !form.unidad) { toast.error("Nombre y unidad requeridos"); return; }
     if (modal.creating) {
       if (insumos.some((i) => i.nombre === form.nombre)) { toast.error("Insumo ya existe"); return; }
-      store.addInsumo({ ...form, stock: Number(form.stock) || 0, minimo: Number(form.minimo) || 0 });
-      toast.success("Insumo agregado"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      try {
+        await store.addInsumo({ ...form, stock: Number(form.stock) || 0, minimo: Number(form.minimo) || 0 });
+        toast.success("Insumo agregado"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      } catch { toast.error("Error al agregar insumo"); }
     } else if (modal.editing) {
-      store.updateInsumo(modal.editing.nombre, { ...form, stock: Number(form.stock), minimo: Number(form.minimo) });
-      toast.success("Insumo actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      try {
+        await store.updateInsumo(modal.editing.nombre, { ...form, stock: Number(form.stock), minimo: Number(form.minimo) });
+        toast.success("Insumo actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      } catch { toast.error("Error al actualizar insumo"); }
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!modal.deleting) return;
-    store.deleteInsumo(modal.deleting.nombre); toast.success("Insumo eliminado"); dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    try {
+      await store.deleteInsumo(modal.deleting.nombre); toast.success("Insumo eliminado"); dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    } catch { toast.error("Error al eliminar insumo"); }
   };
 
   const FormBody = (

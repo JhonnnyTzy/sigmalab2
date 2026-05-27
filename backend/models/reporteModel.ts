@@ -4,14 +4,15 @@ import { AppError } from "../middlewares/errorHandler";
 export async function findAllReportes(params?: { pasanteId?: string; estado?: string; prioridad?: string }) {
   return prisma.reportePasante.findMany({
     where: {
+      activo: true,
       ...(params?.pasanteId && { pasanteId: params.pasanteId }),
       ...(params?.estado && { estado: params.estado }),
       ...(params?.prioridad && { prioridad: params.prioridad }),
     },
     include: {
-      pasante: { include: { persona: true } },
+      pasante: { include: { persona: true, rol: true } },
       atendidoPorUser: { include: { persona: true } },
-      laboratorio: true,
+      laboratorios: true,
     },
     orderBy: { fecha: "desc" },
   });
@@ -20,7 +21,7 @@ export async function findAllReportes(params?: { pasanteId?: string; estado?: st
 export async function findReporteById(id: string) {
   const r = await prisma.reportePasante.findUnique({
     where: { id },
-    include: { pasante: { include: { persona: true } }, atendidoPorUser: { include: { persona: true } }, laboratorio: true },
+    include: { pasante: { include: { persona: true } }, atendidoPorUser: { include: { persona: true } }, laboratorios: true },
   });
   if (!r) throw new AppError("Reporte no encontrado", 404);
   return r;
@@ -29,14 +30,14 @@ export async function findReporteById(id: string) {
 export async function createReporte(data: {
   pasanteId: string; titulo: string; descripcion: string;
   laboratorioId?: string; ubicacion?: string; categoria?: string;
-  prioridad?: string;
+  prioridad?: string; rolReporte?: string;
 }) {
   return prisma.reportePasante.create({
     data: {
       id: `RP-${Date.now()}`,
       ...data,
     },
-    include: { pasante: { include: { persona: true } } },
+    include: { pasante: { include: { persona: true, rol: true } } },
   });
 }
 
@@ -49,4 +50,10 @@ export async function updateReporte(id: string, data: Partial<{
     where: { id }, data,
     include: { pasante: { include: { persona: true } }, atendidoPorUser: { include: { persona: true } } },
   });
+}
+
+export async function deleteReporte(id: string) {
+  const existing = await prisma.reportePasante.findUnique({ where: { id } });
+  if (!existing) throw new AppError("Reporte no encontrado", 404);
+  await prisma.reportePasante.update({ where: { id }, data: { activo: false } });
 }

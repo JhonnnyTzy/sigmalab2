@@ -40,6 +40,7 @@ export function CrearIncidenciaView() {
     store.addReportePasante({
       id,
       pasante: user ? `${user.nombres} ${user.paterno}` : "anónimo",
+      pasanteId: user?.id,
       rolReporte: user?.role,
       titulo: form.titulo.trim(),
       descripcion: form.descripcion.trim(),

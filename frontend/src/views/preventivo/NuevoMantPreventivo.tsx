@@ -71,7 +71,7 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
     dispatch({ type: "SET_FIELD", field: "incidencias", value: [{ problema: "", accion: "", seguimiento: false }] });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     dispatch({ type: "SET_FIELD", field: "touched", value: true });
     if (!form.lab || !form.equipo) {
       toast.error("Selecciona laboratorio y equipo (mínimo para guardar como Pendiente)");
@@ -94,21 +94,25 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
       pruebas: PRUEBAS_CHECKLIST.map((it) => ({ item: it, estado: "OK", obs: "" })),
       incidencias: form.incidencias, insumos: insumosFmt, observaciones: form.observaciones, recomendaciones: form.recomendaciones,
     };
-    if (initial) {
-      store.updateMantPrev(initial.orig, {
-        lab: labName, fecha: fechaFmt, inicio: form.horaInicio, fin: form.horaFin,
-        estado: form.estado, incidencias: incidenciasReales,
-      }, detallePayload);
-      toast.success(`Mantenimiento actualizado (${form.estado})`);
-    } else {
-      store.addMantPrev({
-        codigo: form.equipo, lab: labName, fecha: fechaFmt,
-        inicio: form.horaInicio, fin: form.horaFin, estado: form.estado, incidencias: incidenciasReales,
-      }, detallePayload);
-      toast.success(`Mantenimiento guardado (${form.estado})`);
-      reset();
+    try {
+      if (initial) {
+        await store.updateMantPrev(initial.orig, {
+          lab: labName, fecha: fechaFmt, inicio: form.horaInicio, fin: form.horaFin,
+          estado: form.estado, incidencias: incidenciasReales,
+        }, detallePayload);
+        toast.success(`Mantenimiento actualizado (${form.estado})`);
+      } else {
+        await store.addMantPrev({
+          codigo: form.equipo, lab: labName, fecha: fechaFmt,
+          inicio: form.horaInicio, fin: form.horaFin, estado: form.estado, incidencias: incidenciasReales,
+        }, detallePayload);
+        toast.success(`Mantenimiento guardado (${form.estado})`);
+        reset();
+      }
+      onSaved?.();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al guardar mantenimiento");
     }
-    onSaved?.();
   };
 
   return (

@@ -235,6 +235,7 @@ model Mantenimiento {
   horaInicio    DateTime?             @map("hora_inicio") @db.Time(6)
   horaFin       DateTime?             @map("hora_fin") @db.Time(6)
   estadoId      String                @map("estado_id") @db.VarChar(20)
+  activo        Boolean               @default(true)
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt     DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   equipo        Equipo                @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
@@ -262,6 +263,7 @@ model MantenimientoDetalle {
   estadoFinal     String?       @map("estado_final") @db.VarChar(50)
   observaciones   String?
   recomendaciones String?
+  activo          Boolean       @default(true)
   checklists      Checklist[]
   insumosUsados   InsumoUsado[]
   mantenimiento   Mantenimiento @relation(fields: [mantenimientoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -276,6 +278,7 @@ model Checklist {
   item        String               @db.VarChar(200)
   estado      String               @db.VarChar(20)
   observacion String?
+  activo      Boolean              @default(true)
   detalle     MantenimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([detalleId], map: "idx_checklists_detalle")
@@ -287,6 +290,7 @@ model InsumoUsado {
   detalleId    String               @map("detalle_id") @db.VarChar(30)
   insumoNombre String               @map("insumo_nombre") @db.VarChar(100)
   cantidad     String               @db.VarChar(50)
+  activo       Boolean              @default(true)
   createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamp(6)
   detalle      MantenimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   insumo       Insumo               @relation(fields: [insumoNombre], references: [nombre], onDelete: NoAction, onUpdate: NoAction)
@@ -306,6 +310,7 @@ model Incidencia {
   estadoId            String           @map("estado_id") @db.VarChar(20)
   fecha               DateTime         @default(now()) @db.Timestamp(6)
   resueltaEn          DateTime?        @map("resuelta_en") @db.Timestamp(6)
+  activo              Boolean          @default(true)
   createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   equipo              Equipo?          @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
@@ -329,6 +334,7 @@ model Asignacion {
   prioridad     String       @default("Media") @db.VarChar(10)
   fecha         DateTime     @default(dbgenerated("CURRENT_DATE")) @db.Date
   estado        String       @default("Pendiente") @db.VarChar(20)
+  activo        Boolean      @default(true)
   createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   equipo        Equipo       @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
@@ -343,6 +349,7 @@ model Asignacion {
 model ReportePasante {
   id                String       @id @db.VarChar(30)
   pasanteId         String       @map("pasante_id") @db.VarChar(20)
+  rolReporte        String?      @map("rol_reporte") @db.VarChar(20)
   titulo            String       @db.VarChar(200)
   descripcion       String
   laboratorioId     String?      @map("laboratorio_id") @db.VarChar(20)
@@ -353,6 +360,7 @@ model ReportePasante {
   estado            String       @default("Nuevo") @db.VarChar(20)
   resolucionDetalle String?      @map("resolucion_detalle")
   atendidoPor       String?      @map("atendido_por") @db.VarChar(20)
+  activo            Boolean      @default(true)
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   atendidoPorUser   Usuario?     @relation("AtendidoPor", fields: [atendidoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)

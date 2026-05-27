@@ -30,12 +30,21 @@ export const EQUIPOS = [
 ];
 
 export const USUARIOS = [
-  { nombre: "Lic. Reynaldo Escobar", username: "rescobar", rol: "Encargado ITIC", email: "rescobar@umsa.bo", estado: "Activo", fecha: "15/01/2024" },
-  { nombre: "Yennifer Sarzuri", username: "ysarzuri", rol: "Pasante Preventivo", email: "ysarzuri@est.umsa.bo", estado: "Activo", fecha: "03/02/2024" },
+  { nombre: "Reynaldo Escobar Quispe", username: "rescobar", rol: "Encargado ITIC", email: "rescobar@umsa.bo", estado: "Activo", fecha: "15/01/2024" },
+  { nombre: "Patricia Rojas Vargas", username: "projas", rol: "Docente", email: "projas@umsa.bo", estado: "Activo", fecha: "10/01/2024" },
+  { nombre: "Yennifer Sarzuri Mamani", username: "ysarzuri", rol: "Pasante Preventivo", email: "ysarzuri@est.umsa.bo", estado: "Activo", fecha: "03/02/2024" },
   { nombre: "Carla Mendoza Flores", username: "cmendoza", rol: "Pasante Preventivo", email: "cmendoza@est.umsa.bo", estado: "Activo", fecha: "14/02/2024" },
-  { nombre: "Jhonny Arias", username: "jarias", rol: "Pasante Correctivo", email: "jarias@est.umsa.bo", estado: "Activo", fecha: "20/02/2024" },
+  { nombre: "Jhonny Arias Choque", username: "jarias", rol: "Pasante Correctivo", email: "jarias@est.umsa.bo", estado: "Activo", fecha: "20/02/2024" },
   { nombre: "Mauricio Quispe Mamani", username: "mquispe", rol: "Pasante Correctivo", email: "mquispe@est.umsa.bo", estado: "Inactivo", fecha: "11/03/2024" },
-  { nombre: "Ing. Patricia Rojas", username: "projas", rol: "Administrador", email: "projas@umsa.bo", estado: "Activo", fecha: "10/01/2024" },
+  { nombre: "Juan Carlos Mamani García", username: "jmamani", rol: "Docente", email: "jcmamani@umsa.bo", estado: "Activo", fecha: "05/01/2024" },
+  { nombre: "María Elena Vargas López", username: "mvargas", rol: "Docente", email: "mvargas@umsa.bo", estado: "Activo", fecha: "08/01/2024" },
+  { nombre: "Pedro Quispe Huanca", username: "pquispe", rol: "Docente", email: "pquispe@umsa.bo", estado: "Activo", fecha: "12/01/2024" },
+  { nombre: "Ana Condori Pérez", username: "acondori", rol: "Docente", email: "acondori@umsa.bo", estado: "Activo", fecha: "15/01/2024" },
+  { nombre: "Luis Alberto Flores Ticona", username: "lflores", rol: "Docente", email: "lflores@umsa.bo", estado: "Activo", fecha: "18/01/2024" },
+  { nombre: "Luis Mendoza Flores", username: "lmendoza", rol: "Estudiante", email: "lmendoza@est.umsa.bo", estado: "Activo", fecha: "22/01/2024" },
+  { nombre: "Rosa Huanca Choque", username: "rhuanca", rol: "Estudiante", email: "rhuanca@est.umsa.bo", estado: "Activo", fecha: "25/01/2024" },
+  { nombre: "Carlos Torrez Alanoca", username: "ctorrez", rol: "Estudiante", email: "ctorrez@est.umsa.bo", estado: "Activo", fecha: "28/01/2024" },
+  { nombre: "Visitante Demo", username: "vdemo", rol: "Invitado", email: "invitado@test.com", estado: "Activo", fecha: "01/02/2024" },
 ];
 
 export const MANTENIMIENTOS_RECIENTES = [

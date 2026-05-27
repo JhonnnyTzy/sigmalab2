@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Lock, Camera, Pencil, Save, X } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
@@ -25,6 +25,30 @@ function Skeleton({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-lg bg-slate-200", className)} />;
 }
 
+function ViewField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={viewFieldCls}>{value || "—"}</p>
+    </div>
+  );
+}
+
+function EditField({ label, value, field, type = "text", onChange }: { label: string; value: string; field: string; type?: string; onChange: (field: string, value: string) => void }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(field, e.target.value)}
+        className={inputEditCls}
+        aria-label={label}
+      />
+    </div>
+  );
+}
+
 export function ProfileView() {
   const { user } = useAuth();
   const { setView } = useApp();
@@ -42,6 +66,8 @@ export function ProfileView() {
     email: "", celular: "", fotoUrl: "",
   });
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
+
+  const handleFieldChange = useCallback((field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value })), []);
 
   useEffect(() => {
     apiClient.get("/auth/profile").then((res) => {
@@ -153,26 +179,6 @@ export function ProfileView() {
     finally { setSaving(false); }
   };
 
-  const ViewField = ({ label, value }: { label: string; value: string }) => (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={viewFieldCls}>{value || "—"}</p>
-    </div>
-  );
-
-  const EditField = ({ label, value, field, type = "text" }: { label: string; value: string; field: string; type?: string }) => (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-        className={inputEditCls}
-        aria-label={label}
-      />
-    </div>
-  );
-
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 pb-10">
       {/* Header */}
@@ -259,11 +265,11 @@ export function ProfileView() {
       <Panel title="Información personal">
         {editing ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <EditField label="Nombres" value={form.nombres} field="nombres" />
-            <EditField label="Apellido paterno" value={form.paterno} field="paterno" />
-            <EditField label="Apellido materno" value={form.materno} field="materno" />
-            <EditField label="Correo electrónico" value={form.email} field="email" type="email" />
-            <EditField label="Celular" value={form.celular} field="celular" />
+            <EditField label="Nombres" value={form.nombres} field="nombres" onChange={handleFieldChange} />
+            <EditField label="Apellido paterno" value={form.paterno} field="paterno" onChange={handleFieldChange} />
+            <EditField label="Apellido materno" value={form.materno} field="materno" onChange={handleFieldChange} />
+            <EditField label="Correo electrónico" value={form.email} field="email" type="email" onChange={handleFieldChange} />
+            <EditField label="Celular" value={form.celular} field="celular" onChange={handleFieldChange} />
             <div className="space-y-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registro universitario</p>
               <p className={viewFieldCls + " bg-slate-100"}>{profile.registro || "—"}</p>

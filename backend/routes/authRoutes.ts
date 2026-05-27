@@ -2,11 +2,12 @@ import { Router } from "express";
 import * as authController from "../controllers/authController";
 import { authenticate, authorize } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
-import { loginSchema, updateProfileSchema } from "../schemas/authSchemas";
+import { loginSchema, createUserSchema, updateProfileSchema } from "../schemas/authSchemas";
 
 const router = Router();
 
 router.post("/login", validate(loginSchema), authController.login);
+router.post("/register", authenticate, authorize("encargado"), validate(createUserSchema), authController.register);
 router.get("/profile", authenticate, authController.profile);
 router.patch("/profile", authenticate, validate(updateProfileSchema), authController.updateProfile);
 router.get("/", authenticate, authorize("encargado"), authController.getAllUsers);

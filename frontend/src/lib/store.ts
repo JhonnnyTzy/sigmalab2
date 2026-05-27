@@ -100,6 +100,7 @@ export interface Asignacion {
 export interface ReportePasante {
   id: string;
   pasante: string;
+  pasanteId?: string;
   rolReporte?: "encargado" | "preventivo" | "correctivo" | "docente" | "estudiante" | "invitado";
   titulo: string;
   descripcion: string;
@@ -376,28 +377,84 @@ export const store = {
     return () => listeners.delete(fn);
   },
   // Labs
-  addLab: (l: Laboratorio) => { state.labs = [...state.labs, l]; log("", "Laboratorio creado", l.nombre); notify(); },
-  updateLab: (id: string, patch: Partial<Laboratorio>) => {
+  addLab: async (l: Laboratorio) => {
+    await apiClient.post("/laboratorios", {
+      id: l.id, nombre: l.nombre, edificioId: l.edificio, piso: l.piso,
+      capacidadEquipos: l.capEquipos, capacidadPersonas: l.capPersonas,
+    });
+    state.labs = [...state.labs, l]; log("", "Laboratorio creado", l.nombre); notify();
+  },
+  updateLab: async (id: string, patch: Partial<Laboratorio>) => {
+    await apiClient.patch(`/laboratorios/${id}`, {
+      nombre: patch.nombre, edificioId: patch.edificio, piso: patch.piso,
+      capacidadEquipos: patch.capEquipos, capacidadPersonas: patch.capPersonas,
+    });
     state.labs = state.labs.map((l) => l.id === id ? { ...l, ...patch } : l);
     log("", "Laboratorio editado", id); notify();
   },
-  deleteLab: (id: string) => { state.labs = state.labs.filter((l) => l.id !== id); log("", "Laboratorio eliminado", id); notify(); },
+  deleteLab: async (id: string) => {
+    await apiClient.delete(`/laboratorios/${id}`);
+    state.labs = state.labs.filter((l) => l.id !== id); log("", "Laboratorio eliminado", id); notify();
+  },
   // Equipos
-  addEquipo: (e: Equipo) => { state.equipos = [...state.equipos, e]; log("", "Equipo registrado", e.codigo); notify(); },
-  updateEquipo: (codigo: string, patch: Partial<Equipo>) => {
+  addEquipo: async (e: Equipo) => {
+    await apiClient.post("/equipos", {
+      codigo: e.codigo, nombre: e.nombre, laboratorioId: e.lab,
+      fila: e.fila || undefined, puesto: e.puesto || undefined,
+      sistemaOperativo: e.so || undefined, marca: e.marca || undefined,
+      modelo: e.modelo || undefined, numeroSerie: e.serie || undefined,
+      estadoId: e.estado,
+    });
+    state.equipos = [...state.equipos, e]; log("", "Equipo registrado", e.codigo); notify();
+  },
+  updateEquipo: async (codigo: string, patch: Partial<Equipo>) => {
+    const body: any = {};
+    if (patch.nombre !== undefined) body.nombre = patch.nombre;
+    if (patch.lab !== undefined) body.laboratorioId = patch.lab;
+    if (patch.fila !== undefined) body.fila = patch.fila;
+    if (patch.puesto !== undefined) body.puesto = patch.puesto;
+    if (patch.so !== undefined) body.sistemaOperativo = patch.so;
+    if (patch.marca !== undefined) body.marca = patch.marca;
+    if (patch.modelo !== undefined) body.modelo = patch.modelo;
+    if (patch.serie !== undefined) body.numeroSerie = patch.serie;
+    if (patch.estado !== undefined) body.estadoId = patch.estado;
+    await apiClient.patch(`/equipos/${codigo}`, body);
     state.equipos = state.equipos.map((e) => e.codigo === codigo ? { ...e, ...patch } : e);
     log("", "Equipo actualizado", codigo); notify();
   },
-  deleteEquipo: (codigo: string) => { state.equipos = state.equipos.filter((e) => e.codigo !== codigo); log("", "Equipo eliminado", codigo); notify(); },
+  deleteEquipo: async (codigo: string) => {
+    await apiClient.delete(`/equipos/${codigo}`);
+    state.equipos = state.equipos.filter((e) => e.codigo !== codigo); log("", "Equipo eliminado", codigo); notify();
+  },
   // Usuarios
-  addUsuario: (u: Usuario) => { state.usuarios = [...state.usuarios, u]; log("", "Usuario creado", u.username); notify(); },
-  updateUsuario: (username: string, patch: Partial<Usuario>) => {
+  addUsuario: async (u: Usuario) => {
+    // POST /auth/register expects personaId + roleId + password — the view handles creation via auth.addAccount
+    state.usuarios = [...state.usuarios, u]; log("", "Usuario creado", u.username); notify();
+  },
+  updateUsuario: async (username: string, patch: Partial<Usuario>) => {
+    const body: any = {};
+    if (patch.rol !== undefined) body.roleId = patch.rol;
+    if (patch.estado !== undefined) body.activo = patch.estado === "Activo";
+    await apiClient.patch(`/auth/${username}`, body);
     state.usuarios = state.usuarios.map((u) => u.username === username ? { ...u, ...patch } : u);
     log("", "Usuario editado", username); notify();
   },
-  deleteUsuario: (username: string) => { state.usuarios = state.usuarios.filter((u) => u.username !== username); log("", "Usuario eliminado", username); notify(); },
-  // Mantenimientos
-  addMantPrev: (m: MantPrev, detalle?: Partial<MantDetalle>) => {
+  deleteUsuario: async (username: string) => {
+    await apiClient.delete(`/auth/${username}`);
+    state.usuarios = state.usuarios.filter((u) => u.username !== username); log("", "Usuario eliminado", username); notify();
+  },
+  // Mantenimientos (preventivo / correctivo)
+  addMantPrev: async (m: MantPrev, detalle?: Partial<MantDetalle>) => {
+    const res = await apiClient.post("/mantenimientos", {
+      tipoId: "preventivo", equipoCodigo: m.codigo, tecnicoId: "u-prev",
+      fecha: m.fecha, estadoId: m.estado?.toLowerCase().replace(/\s+/g, "_") || "programado",
+    });
+    const mantId = res.data?.id || `MP-${Date.now()}`;
+    if (detalle) {
+      await apiClient.post("/mantenimientos/detalle", {
+        mantenimientoId: mantId, ...detalle,
+      });
+    }
     state.misPrev = [m, ...state.misPrev];
     state.mantenimientos = [{ equipo: m.codigo, lab: m.lab, tecnico: "Yennifer Sarzuri", tipo: "Preventivo", fecha: m.fecha, estado: m.estado }, ...state.mantenimientos].slice(0, 50);
     const id = `MP-${Date.now()}`;
@@ -410,7 +467,12 @@ export const store = {
     notify();
     return id;
   },
-  updateMantPrev: (orig: MantPrev, patch: Partial<MantPrev>, detallePatch?: Partial<MantDetalle>) => {
+  updateMantPrev: async (orig: MantPrev, patch: Partial<MantPrev>, detallePatch?: Partial<MantDetalle>) => {
+    const list = state.mantenimientos as any[];
+    const existing = list.find((m: any) => m.equipo === orig.codigo && m.lab === orig.lab && m.fecha === orig.fecha);
+    if (existing?.id) {
+      await apiClient.patch(`/mantenimientos/${existing.id}`, { estadoId: patch.estado?.toLowerCase().replace(/\s+/g, "_") });
+    }
     state.misPrev = state.misPrev.map((m) => (m === orig || (m.codigo === orig.codigo && m.fecha === orig.fecha && m.inicio === orig.inicio)) ? { ...m, ...patch } : m);
     if (detallePatch) {
       state.detalles = state.detalles.map((d) => (d.equipo === orig.codigo && d.fecha === orig.fecha) ? { ...d, ...detallePatch, estado: patch.estado ?? d.estado } : d);
@@ -418,7 +480,17 @@ export const store = {
     log("", "Mantenimiento actualizado", orig.codigo);
     notify();
   },
-  addCorrectivo: (h: HistCorrectivo, equipoCodigo: string, nuevoEstado: string, detalle?: Partial<MantDetalle>) => {
+  addCorrectivo: async (h: HistCorrectivo, equipoCodigo: string, nuevoEstado: string, detalle?: Partial<MantDetalle>) => {
+    const res = await apiClient.post("/mantenimientos", {
+      tipoId: "correctivo", equipoCodigo, tecnicoId: "u-corr",
+      fecha: h.fecha, estadoId: "en_proceso",
+    });
+    const mantId = res.data?.id || `MC-${Date.now()}`;
+    if (detalle) {
+      await apiClient.post("/mantenimientos/detalle", {
+        mantenimientoId: mantId, descripcion: h.problema, accionRealizada: h.accion, ...detalle,
+      });
+    }
     state.histCorrectivos = [h, ...state.histCorrectivos];
     const lab = state.equipos.find((e) => e.codigo === h.equipo)?.lab ?? "—";
     state.mantenimientos = [{ equipo: h.equipo, lab, tecnico: h.tecnico, tipo: "Correctivo", fecha: h.fecha, estado: h.estado === "Resuelto" ? "Completado" : "En proceso" }, ...state.mantenimientos].slice(0, 50);
@@ -442,16 +514,42 @@ export const store = {
     notify();
   },
   // Insumos
-  updateInsumo: (nombre: string, patch: Partial<InsumoStock>) => {
+  updateInsumo: async (nombre: string, patch: Partial<InsumoStock>) => {
+    await apiClient.patch(`/insumos/${encodeURIComponent(nombre)}`, {
+      stock: patch.stock, stockMinimo: patch.minimo, unidadMedida: patch.unidad,
+    });
     state.insumos = state.insumos.map((i) => i.nombre === nombre ? { ...i, ...patch } : i);
     notify();
   },
-  addInsumo: (i: InsumoStock) => { state.insumos = [...state.insumos, i]; log("", "Insumo creado", i.nombre); notify(); },
-  deleteInsumo: (nombre: string) => { state.insumos = state.insumos.filter((x) => x.nombre !== nombre); log("", "Insumo eliminado", nombre); notify(); },
+  addInsumo: async (i: InsumoStock) => {
+    await apiClient.post("/insumos", { nombre: i.nombre, unidadMedida: i.unidad, stock: i.stock, stockMinimo: i.minimo });
+    state.insumos = [...state.insumos, i]; log("", "Insumo creado", i.nombre); notify();
+  },
+  deleteInsumo: async (nombre: string) => {
+    await apiClient.delete(`/insumos/${encodeURIComponent(nombre)}`);
+    state.insumos = state.insumos.filter((x) => x.nombre !== nombre); log("", "Insumo eliminado", nombre); notify();
+  },
   // Perifericos
-  addPeriferico: (p: Periferico) => { state.perifericos = [...state.perifericos, p]; log("", "Periférico registrado", p.id); notify(); },
-  deletePeriferico: (id: string) => { state.perifericos = state.perifericos.filter((p) => p.id !== id); log("", "Periférico eliminado", id); notify(); },
-  updatePeriferico: (id: string, patch: Partial<Periferico>) => {
+  addPeriferico: async (p: Periferico) => {
+    await apiClient.post("/perifericos", {
+      id: p.id, tipo: p.tipo, marca: p.marca, modelo: p.modelo,
+      numeroSerie: p.serie, equipoCodigo: p.asignadoA || undefined, estado: p.estado,
+    });
+    state.perifericos = [...state.perifericos, p]; log("", "Periférico registrado", p.id); notify();
+  },
+  deletePeriferico: async (id: string) => {
+    await apiClient.delete(`/perifericos/${id}`);
+    state.perifericos = state.perifericos.filter((p) => p.id !== id); log("", "Periférico eliminado", id); notify();
+  },
+  updatePeriferico: async (id: string, patch: Partial<Periferico>) => {
+    const body: any = {};
+    if (patch.tipo !== undefined) body.tipo = patch.tipo;
+    if (patch.marca !== undefined) body.marca = patch.marca;
+    if (patch.modelo !== undefined) body.modelo = patch.modelo;
+    if (patch.serie !== undefined) body.numeroSerie = patch.serie;
+    if (patch.asignadoA !== undefined) body.equipoCodigo = patch.asignadoA;
+    if (patch.estado !== undefined) body.estado = patch.estado;
+    await apiClient.patch(`/perifericos/${id}`, body);
     state.perifericos = state.perifericos.map((p) => p.id === id ? { ...p, ...patch } : p);
     log("", "Periférico editado", id); notify();
   },
@@ -462,37 +560,77 @@ export const store = {
     notify();
   },
   // Asignaciones
-  addAsignacion: (a: Asignacion) => {
+  addAsignacion: async (a: Asignacion) => {
+    await apiClient.post("/asignaciones", {
+      equipoCodigo: a.equipo, laboratorioId: a.lab, tecnicoId: a.asignadoA,
+      problema: a.problema, prioridad: a.prioridad,
+    });
     state.asignaciones = [a, ...state.asignaciones];
     log("", "Equipo asignado", `${a.equipo} → @${a.asignadoA}`);
     notify();
   },
-  updateAsignacion: (id: string, patch: Partial<Asignacion>) => {
+  updateAsignacion: async (id: string, patch: Partial<Asignacion>) => {
+    const body: any = {};
+    if (patch.estado !== undefined) body.estado = patch.estado;
+    if (patch.prioridad !== undefined) body.prioridad = patch.prioridad;
+    if (patch.problema !== undefined) body.problema = patch.problema;
+    await apiClient.patch(`/asignaciones/${id}`, body);
     state.asignaciones = state.asignaciones.map((a) => a.id === id ? { ...a, ...patch } : a);
     notify();
   },
   // Reportes de pasante → encargado
-  addReportePasante: (r: ReportePasante) => {
+  addReportePasante: async (r: ReportePasante) => {
+    // optimistic update: mostrar en UI inmediatamente
     state.reportesPasante = [r, ...state.reportesPasante];
     log(r.pasante, "Reporte enviado", r.titulo);
     notify();
+    try {
+      const lab = state.labs.find((l) => l.nombre === r.laboratorio);
+      await apiClient.post("/reportes", {
+        pasanteId: r.pasanteId || "u-prev",
+        titulo: r.titulo, descripcion: r.descripcion,
+        laboratorioId: lab?.id || r.laboratorio, ubicacion: r.ubicacion, categoria: r.categoria,
+        prioridad: r.prioridad, rolReporte: r.rolReporte,
+      });
+    } catch (e) { console.error("POST /reportes falló:", e, r); }
   },
-  updateReportePasante: (id: string, patch: Partial<ReportePasante>) => {
+  updateReportePasante: async (id: string, patch: Partial<ReportePasante>) => {
+    const body: any = {};
+    if (patch.estado !== undefined) body.estado = patch.estado;
+    if (patch.resolucionDetalle !== undefined) body.resolucionDetalle = patch.resolucionDetalle;
+    await apiClient.patch(`/reportes/${id}`, body);
     state.reportesPasante = state.reportesPasante.map((r) => r.id === id ? { ...r, ...patch } : r);
     notify();
   },
   // Inventario
-  addInventario: (it: InventarioItem) => {
+  addInventario: async (it: InventarioItem) => {
+    await apiClient.post("/inventario", {
+      id: it.id, categoriaId: it.categoria, codigoItic: it.codItic,
+      codigoFacultativo: it.codFacultativo, codigoUmsa: it.codUmsa,
+      numeroSerie: it.numeroSerie, marca: it.marca, modelo: it.modelo,
+      estado: it.estado, fechaIngreso: it.fechaIngreso,
+      fechaAsignacion: it.fechaAsignacion, laboratorioId: it.laboratorio,
+      equipoCodigo: it.asignadoEquipo, observaciones: it.observaciones,
+    });
     state.inventario = [it, ...state.inventario];
     log("", "Inventario: ítem registrado", `${it.categoria} ${it.codItic}`);
     notify();
   },
-  updateInventario: (id: string, patch: Partial<InventarioItem>) => {
+  updateInventario: async (id: string, patch: Partial<InventarioItem>) => {
+    const body: any = {};
+    if (patch.categoria !== undefined) body.categoriaId = patch.categoria;
+    if (patch.estado !== undefined) body.estado = patch.estado;
+    if (patch.observaciones !== undefined) body.observaciones = patch.observaciones;
+    if (patch.laboratorio !== undefined) body.laboratorioId = patch.laboratorio;
+    if (patch.asignadoEquipo !== undefined) body.equipoCodigo = patch.asignadoEquipo;
+    if (patch.fechaAsignacion !== undefined) body.fechaAsignacion = patch.fechaAsignacion;
+    await apiClient.patch(`/inventario/${id}`, body);
     state.inventario = state.inventario.map((i) => i.id === id ? { ...i, ...patch } : i);
     log("", "Inventario: ítem editado", id);
     notify();
   },
-  deleteInventario: (id: string) => {
+  deleteInventario: async (id: string) => {
+    await apiClient.delete(`/inventario/${id}`);
     state.inventario = state.inventario.filter((i) => i.id !== id);
     log("", "Inventario: ítem eliminado", id);
     notify();
@@ -506,11 +644,16 @@ export const store = {
     notify();
   },
   // Correctivo: actualizar registro existente (por clave equipo+fecha+tecnico)
-  updateCorrectivo: (
+  updateCorrectivo: async (
     key: { equipo: string; fecha: string; tecnico: string },
     patchHist: Partial<HistCorrectivo>,
     detallePatch?: Partial<MantDetalle>,
   ) => {
+    const list = state.mantenimientos as any[];
+    const existing = list.find((m: any) => m.tipo === "Correctivo" && m.equipo === key.equipo && m.fecha === key.fecha && m.tecnico === key.tecnico);
+    if (existing?.id) {
+      await apiClient.patch(`/mantenimientos/${existing.id}`, { estadoId: patchHist.estado?.toLowerCase().replace(/\s+/g, "_") });
+    }
     state.histCorrectivos = state.histCorrectivos.map((h) =>
       (h.equipo === key.equipo && h.fecha === key.fecha && h.tecnico === key.tecnico)
         ? { ...h, ...patchHist } : h,
@@ -539,7 +682,7 @@ export const correctivoPrefill = {
 // ─── API initialization ─────────────────────────────────────────────
 export async function initFromApi() {
   try {
-    const [labsRes, equiposRes, mantRes, incRes, insumosRes, usersRes, periRes, invRes] = await Promise.allSettled([
+    const [labsRes, equiposRes, mantRes, incRes, insumosRes, usersRes, periRes, invRes, asigRes, reportRes, logRes] = await Promise.allSettled([
       apiClient.get("/laboratorios"),
       apiClient.get("/equipos"),
       apiClient.get("/mantenimientos"),
@@ -548,6 +691,9 @@ export async function initFromApi() {
       apiClient.get("/auth"),
       apiClient.get("/perifericos"),
       apiClient.get("/inventario"),
+      apiClient.get("/asignaciones"),
+      apiClient.get("/reportes"),
+      apiClient.get("/logs"),
     ]);
 
     if (labsRes.status === "fulfilled" && labsRes.value.data?.length) {
@@ -567,6 +713,12 @@ export async function initFromApi() {
       if (apiEq.length > 0) state.equipos = apiEq;
     }
     if (mantRes.status === "fulfilled" && mantRes.value.data?.length) {
+      const formatTime = (t: any) => {
+        if (!t) return null;
+        if (typeof t === "string") return t.slice(0, 5);
+        if (t instanceof Date) return t.toTimeString().slice(0, 5);
+        return String(t).slice(0, 5);
+      };
       const apiMant = mantRes.value.data.map((m: any) => ({
         equipo: m.equipo?.codigo || m.equipoCodigo,
         lab: m.equipo?.laboratorio?.nombre || m.laboratorioId,
@@ -574,8 +726,79 @@ export async function initFromApi() {
         tipo: m.tipo?.nombre || m.tipoId,
         fecha: new Date(m.fecha).toLocaleDateString("es-BO"),
         estado: m.estado?.nombre || m.estadoId,
+        horaInicio: formatTime(m.horaInicio),
+        horaFin: formatTime(m.horaFin),
+        detalle: m.detalle,
       }));
       if (apiMant.length > 0) state.mantenimientos = apiMant.slice(0, 50);
+
+      const prevs = apiMant.filter((m: any) => m.tipo === "Preventivo");
+      if (prevs.length > 0) {
+        state.misPrev = prevs.map((m: any) => ({
+          codigo: m.equipo,
+          lab: m.lab,
+          fecha: m.fecha,
+          inicio: m.horaInicio || "—",
+          fin: m.horaFin || "—",
+          estado: m.estado,
+        }));
+      }
+      const correctivos = apiMant.filter((m: any) => m.tipo === "Correctivo");
+      if (correctivos.length > 0) {
+        state.histCorrectivos = correctivos.map((m: any) => ({
+          equipo: m.equipo,
+          problema: m.detalle?.descripcion || m.detalle?.diagnostico || "—",
+          accion: m.detalle?.accionRealizada || m.detalle?.resolucion || "—",
+          tecnico: m.tecnico,
+          fecha: m.fecha,
+          estado: m.estado,
+        }));
+      }
+
+      // Populate state.detalles from API data (maps m.detalle → MantDetalle)
+      const apiDetalles: MantDetalle[] = mantRes.value.data
+        .filter((m: any) => m.detalle)
+        .map((m: any) => {
+          const d = m.detalle;
+          const tipo = m.tipo?.nombre || m.tipoId;
+          const mapChecklist = (cat: string) =>
+            (d.checklists ?? [])
+              .filter((c: any) => c.categoria === cat)
+              .map((c: any) => ({ item: c.item, estado: c.estado, obs: c.observacion || "" }));
+          const mapped: MantDetalle = {
+            id: d.id || `det-${m.id}`,
+            tipo,
+            equipo: m.equipo?.codigo || m.equipoCodigo,
+            lab: m.equipo?.laboratorio?.nombre || m.laboratorioId,
+            tecnico: m.tecnico?.persona?.nombres + " " + (m.tecnico?.persona?.paterno || ""),
+            fecha: new Date(m.fecha).toLocaleDateString("es-BO"),
+            inicio: formatTime(m.horaInicio) || undefined,
+            fin: formatTime(m.horaFin) || undefined,
+            estado: m.estado?.nombre || m.estadoId,
+            descripcion: d.descripcion || undefined,
+            diagnostico: d.diagnostico || undefined,
+            accion: d.accionRealizada || undefined,
+            resolucion: d.resolucion || undefined,
+            tipoIncidencia: d.tipoIncidencia || undefined,
+            estadoFinal: d.estadoFinal || undefined,
+            observaciones: d.observaciones || undefined,
+            recomendaciones: d.recomendaciones || undefined,
+          };
+          if (d.checklists?.length) {
+            mapped.hardware = mapChecklist("hardware");
+            mapped.software = mapChecklist("software");
+            mapped.pruebas = mapChecklist("pruebas");
+          }
+          if (d.insumosUsados?.length) {
+            mapped.insumos = d.insumosUsados.map((iu: any) => ({
+              insumo: iu.insumo?.nombre || iu.insumoNombre,
+              cantidad: String(iu.cantidad),
+              unidad: iu.insumo?.unidadMedida || "unidades",
+            }));
+          }
+          return mapped;
+        });
+      if (apiDetalles.length > 0) state.detalles = apiDetalles;
     }
     if (incRes.status === "fulfilled" && incRes.value.data?.length) {
       const apiInc = incRes.value.data.map((i: any) => ({
@@ -610,7 +833,23 @@ export async function initFromApi() {
         email: u.email || "",
         estado: u.activo ? "Activo" : "Inactivo",
         fecha: new Date(u.createdAt).toLocaleDateString("es-BO"),
+        nombres: u.nombres,
+        paterno: u.paterno,
+        materno: u.materno || undefined,
+        celular: u.celular || undefined,
       }));
+      // Sync to auth.accounts so UsuariosView (which reads accounts) shows all backend users
+      auth.setAccounts(usersRes.value.data.map((u: any) => ({
+        id: u.id,
+        role: u.roleId,
+        activo: u.activo,
+        nombres: u.nombres,
+        paterno: u.paterno,
+        materno: u.materno || undefined,
+        email: u.email || undefined,
+        registro: u.registro || undefined,
+        celular: u.celular || undefined,
+      })));
     }
     if (invRes.status === "fulfilled" && invRes.value.data?.length) {
       state.inventario = invRes.value.data.map((it: any) => ({
@@ -638,6 +877,48 @@ export async function initFromApi() {
           return acc;
         }, [] as StockMinimo[]);
       if (cats.length > 0) state.stockMinimos = cats;
+    }
+    if (asigRes.status === "fulfilled" && asigRes.value.data?.length) {
+      state.asignaciones = asigRes.value.data.map((a: any) => ({
+        id: a.id,
+        equipo: a.equipo?.codigo || a.equipoCodigo,
+        lab: a.laboratorios?.nombre || a.laboratorioId,
+        asignadoA: a.tecnico?.id || a.tecnicoId,
+        problema: a.problema,
+        prioridad: a.prioridad,
+        fecha: new Date(a.fecha).toLocaleDateString("es-BO"),
+        estado: a.estado,
+      }));
+    }
+    if (reportRes.status === "fulfilled" && reportRes.value.data) {
+      state.reportesPasante = reportRes.value.data.map((r: any) => ({
+        id: r.id,
+        pasante: r.pasante?.persona?.nombres + " " + (r.pasante?.persona?.paterno || ""),
+        pasanteId: r.pasanteId,
+        rolReporte: r.rolReporte || r.pasante?.rol?.id || undefined,
+        titulo: r.titulo,
+        descripcion: r.descripcion,
+        laboratorio: r.laboratorios?.nombre || r.laboratorioId,
+        ubicacion: r.ubicacion || "",
+        categoria: r.categoria || "",
+        prioridad: r.prioridad,
+        fecha: new Date(r.fecha).toLocaleDateString("es-BO"),
+        estado: r.estado,
+        resolucionDetalle: r.resolucionDetalle || undefined,
+      }));
+    }
+    if (logRes.status === "fulfilled" && logRes.value.data?.length) {
+      state.logs = logRes.value.data.map((l: any) => ({
+        ts: new Date(l.timestamp).toLocaleString("es-BO"),
+        usuario: l.usuario?.persona?.nombres + " " + (l.usuario?.persona?.paterno || "") || l.usuarioId || "",
+        accion: l.accion,
+        detalle: l.detalle || "",
+        modulo: l.modulo || undefined,
+        entidad: l.entidad || undefined,
+        equipo: l.equipoCodigo || undefined,
+        tipoAccion: l.tipoAccion || undefined,
+        estado: l.estado || "Éxito",
+      }));
     }
     notify();
   } catch {

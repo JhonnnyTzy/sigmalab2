@@ -8,6 +8,7 @@ export const createReporteSchema = z.object({
   ubicacion: z.string().optional(),
   categoria: z.string().optional(),
   prioridad: z.enum(["Alta", "Media", "Baja"]).optional(),
+  rolReporte: z.string().optional(),
 });
 
 export const updateReporteSchema = z.object({

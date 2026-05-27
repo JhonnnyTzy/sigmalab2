@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as insumoModel from "../models/insumoModel";
+import { createLog } from "../models/logModel";
 
 export async function getAll(_req: Request, res: Response, next: NextFunction) {
   try {
@@ -32,6 +33,14 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await insumoModel.deleteInsumo(req.params.nombre);
+    createLog({
+      usuarioId: req.user?.userId,
+      accion: "Eliminar insumo",
+      detalle: `Se eliminó insumo ${req.params.nombre}`,
+      modulo: "Insumos",
+      entidad: req.params.nombre,
+      tipoAccion: "Eliminar",
+    }).catch(() => {});
     res.status(204).send();
   } catch (err) { next(err); }
 }

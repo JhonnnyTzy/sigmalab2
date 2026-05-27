@@ -46,18 +46,36 @@ export function PerifericosView() {
     dispatchModal({ type: "SET_FIELD", field: "creating", value: true });
   };
   const openEdit = (p: Periferico) => { setForm(p); dispatchModal({ type: "SET_FIELD", field: "editing", value: p }); };
-  const submit = () => {
+  const submit = async () => {
     if (!form.id || !form.marca) { toast.error("Código y marca requeridos"); return; }
     if (modal.creating) {
       if (perifericos.some((p) => p.id === form.id)) { toast.error("Código ya existe"); return; }
-      store.addPeriferico(form); toast.success("Periférico registrado"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      try {
+        await store.addPeriferico(form);
+        toast.success("Periférico registrado");
+        dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al registrar periférico");
+      }
     } else if (modal.editing) {
-      store.updatePeriferico(modal.editing.id, form); toast.success("Periférico actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      try {
+        await store.updatePeriferico(modal.editing.id, form);
+        toast.success("Periférico actualizado");
+        dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al actualizar periférico");
+      }
     }
   };
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!modal.deleting) return;
-    store.deletePeriferico(modal.deleting.id); toast.success("Periférico eliminado"); dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    try {
+      await store.deletePeriferico(modal.deleting.id);
+      toast.success("Periférico eliminado");
+      dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al eliminar periférico");
+    }
   };
 
   const FormBody = (

@@ -7,7 +7,7 @@ export function MisIncidenciasView() {
   const { user } = useAuth();
   const reportes = useStore((s) => s.reportesPasante);
   const mine = user
-    ? reportes.filter((r) => r.pasante.includes(user.nombres) && r.pasante.includes(user.paterno))
+    ? reportes.filter((r) => r.pasanteId === user.id)
     : [];
 
   return (

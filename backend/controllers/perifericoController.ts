@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as perifericoModel from "../models/perifericoModel";
+import { createLog } from "../models/logModel";
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
   try {
@@ -35,6 +36,14 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await perifericoModel.deletePeriferico(req.params.id);
+    createLog({
+      usuarioId: req.user?.userId,
+      accion: "Eliminar periférico",
+      detalle: `Se eliminó periférico ${req.params.id}`,
+      modulo: "Periféricos",
+      entidad: req.params.id,
+      tipoAccion: "Eliminar",
+    }).catch(() => {});
     res.status(204).send();
   } catch (err) { next(err); }
 }

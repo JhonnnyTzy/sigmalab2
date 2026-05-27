@@ -37,10 +37,11 @@ export function EquiposView() {
     (state: any, action: { type: string; field?: string; value?: any }) => {
       switch (action.type) {
         case "SET_FIELD": return { ...state, [action.field!]: action.value };
+        case "OPEN_WITH_TAB": return { ...state, selected: action.value, selectedTab: action.tab ?? "info" };
         default: return state;
       }
     },
-    { selected: null, editing: null, creating: false, deleting: null }
+    { selected: null, selectedTab: "info", editing: null, creating: false, deleting: null }
   );
   const [form, setForm] = useState<Equipo>(EMPTY);
 
@@ -60,19 +61,37 @@ export function EquiposView() {
   };
   const openEdit = (e: Equipo) => { setForm(e); dispatchModal({ type: "SET_FIELD", field: "editing", value: e }); };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.codigo || !form.nombre) { toast.error("Código y Nombre requeridos"); return; }
     if (modal.creating) {
       if (equipos.some((e) => e.codigo === form.codigo)) { toast.error("Código ya existe"); return; }
-      store.addEquipo(form); toast.success("Equipo registrado"); dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      try {
+        await store.addEquipo(form);
+        toast.success("Equipo registrado");
+        dispatchModal({ type: "SET_FIELD", field: "creating", value: false });
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al crear equipo");
+      }
     } else if (modal.editing) {
-      store.updateEquipo(modal.editing.codigo, form); toast.success("Equipo actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      try {
+        await store.updateEquipo(modal.editing.codigo, form);
+        toast.success("Equipo actualizado");
+        dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error || "Error al actualizar equipo");
+      }
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!modal.deleting) return;
-    store.deleteEquipo(modal.deleting.codigo); toast.success(`${modal.deleting.codigo} eliminado`); dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    try {
+      await store.deleteEquipo(modal.deleting.codigo);
+      toast.success(`${modal.deleting.codigo} eliminado`);
+      dispatchModal({ type: "SET_FIELD", field: "deleting", value: null });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al eliminar equipo");
+    }
   };
 
   const FormBody = (
@@ -156,7 +175,7 @@ export function EquiposView() {
                   <td className="px-4 py-3"><StatusBadge status={e.estado} /></td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <button type="button" onClick={() => dispatchModal({ type: "SET_FIELD", field: "selected", value: e })} className="inline-flex size-8 items-center justify-center rounded-md text-teal hover:bg-teal-soft" title="Ver detalle">
+                      <button type="button" onClick={() => dispatchModal({ type: "OPEN_WITH_TAB", value: e, tab: "info" })} className="inline-flex size-8 items-center justify-center rounded-md text-teal hover:bg-teal-soft" title="Ver detalle">
                         <Eye className="size-4" />
                       </button>
                       {!readOnly && (
@@ -169,7 +188,7 @@ export function EquiposView() {
                           </button>
                         </>
                       )}
-                      <button type="button" onClick={() => setSelected(e)} className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-100" title="Historial">
+                      <button type="button" onClick={() => dispatchModal({ type: "OPEN_WITH_TAB", value: e, tab: "hist" })} className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-100" title="Historial">
                         <Clock className="size-4" />
                       </button>
                     </div>
@@ -195,7 +214,7 @@ export function EquiposView() {
         </div>
       </Panel>
 
-      <EquipmentDetailModal open={!!modal.selected} onOpenChange={(v) => !v && dispatchModal({ type: "SET_FIELD", field: "selected", value: null })} equipo={modal.selected} />
+      <EquipmentDetailModal open={!!modal.selected} onOpenChange={(v) => !v && dispatchModal({ type: "SET_FIELD", field: "selected", value: null })} equipo={modal.selected} initialTab={modal.selectedTab} />
 
       <Modal open={modal.creating} onOpenChange={(v) => dispatchModal({ type: "SET_FIELD", field: "creating", value: v })} title="Registrar nuevo equipo" size="lg"
         footer={<><Button variant="outline" onClick={() => dispatchModal({ type: "SET_FIELD", field: "creating", value: false })}>Cancelar</Button><Button onClick={submit} className="bg-navy">Registrar</Button></>}>

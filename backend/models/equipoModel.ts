@@ -3,6 +3,7 @@ import { AppError } from "../middlewares/errorHandler";
 
 export async function findAllEquipos() {
   return prisma.equipo.findMany({
+    where: { activo: true },
     include: { laboratorio: true, estado: true },
     orderBy: { codigo: "asc" },
   });
@@ -84,12 +85,13 @@ export async function updateEquipo(codigo: string, data: Partial<{
 export async function deleteEquipo(codigo: string) {
   const existing = await prisma.equipo.findUnique({ where: { codigo } });
   if (!existing) throw new AppError("Equipo no encontrado", 404);
-  await prisma.equipo.delete({ where: { codigo } });
+  await prisma.equipo.update({ where: { codigo }, data: { activo: false } });
 }
 
 export async function countByEstado() {
   const equipos = await prisma.equipo.groupBy({
     by: ["estadoId"],
+    where: { activo: true },
     _count: { estadoId: true },
   });
   const estados = await prisma.estadoEquipo.findMany();
@@ -101,6 +103,7 @@ export async function countByEstado() {
 export async function countByLaboratorio() {
   const result = await prisma.equipo.groupBy({
     by: ["laboratorioId"],
+    where: { activo: true },
     _count: { laboratorioId: true },
   });
   const labs = await prisma.laboratorio.findMany();
@@ -111,7 +114,7 @@ export async function countByLaboratorio() {
 export async function findEquiposConProblemas() {
   const estadosProblema = ["pendiente", "en_mantenimiento", "en_espera_repuesto"];
   return prisma.equipo.findMany({
-    where: { estadoId: { in: estadosProblema } },
+    where: { activo: true, estadoId: { in: estadosProblema } },
     include: { laboratorio: true, estado: true, incidencias: { orderBy: { fecha: "desc" }, take: 1 } },
     orderBy: { updatedAt: "desc" },
   });
