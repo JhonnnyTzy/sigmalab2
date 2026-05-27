@@ -9,6 +9,9 @@ function detectApiUrl(): string {
       const port = import.meta.env.VITE_API_PORT || "4000";
       return `https://${port}-${host.replace(/^[^.]+-/, "")}/api`;
     }
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      return `http://${host}:4000/api`;
+    }
   }
   return "http://localhost:4000/api";
 }

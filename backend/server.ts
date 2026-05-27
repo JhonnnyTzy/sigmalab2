@@ -1,8 +1,8 @@
 import app from "./app";
 import { env } from "./config/env";
 
-const server = app.listen(env.PORT, () => {
-  console.log(`🔬 SIGMALAB API corriendo en http://localhost:${env.PORT}`);
+const server = app.listen(env.PORT, "0.0.0.0", () => {
+  console.log(`🔬 SIGMALAB API corriendo en puerto ${env.PORT} (0.0.0.0 — accesible desde la red)`);
   console.log(`   Entorno: ${env.NODE_ENV}`);
   console.log(`   Health:  http://localhost:${env.PORT}/api/health`);
 });
