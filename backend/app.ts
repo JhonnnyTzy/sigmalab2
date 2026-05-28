@@ -10,7 +10,7 @@ const allowedOrigins = env.CORS_ORIGIN.split(",").map(s => s.trim());
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) return cb(null, true);
-    return cb(null, true); // allow all in dev
+    return cb(null, true);
   },
   credentials: true,
 }));
@@ -26,6 +26,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api", routes);
+app.use("/api", (_req, res) => res.status(404).json({ error: "Ruta de API no encontrada" }));
 
 app.use(errorHandler);
 

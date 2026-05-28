@@ -1,7 +1,17 @@
 @echo off
 chcp 65001 >nul
 echo ============================================
-echo  SIGMALAB — Inicio en red local
+echo  SIGMALAB — Inicio en red
+echo ============================================
+echo.
+echo 1) RED LOCAL (misma WiFi):
+echo    Comparte: http://IP:5173
+echo.
+echo 2) REMOTO (ngrok — un solo tunel):
+echo    a) Descarga ngrok de https://ngrok.com
+echo    b) En otra terminal:  ngrok http 5173
+echo    c) Comparte la URL https://XXXX.ngrok-free.app
+echo.
 echo ============================================
 echo.
 
@@ -14,11 +24,7 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
 set IP=%IP: =%
 
 echo Tu IP local: %IP%
-echo.
-echo Comparte esta URL con tu compañera:
-echo   http://%IP%:5173
-echo.
-echo ============================================
+echo URL local: http://%IP%:5173
 echo.
 
 start "Backend SIGMALAB" cmd /c "cd /d %~dp0backend && npm run dev"
