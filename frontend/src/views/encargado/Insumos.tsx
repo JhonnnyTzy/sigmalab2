@@ -1,6 +1,6 @@
-import { useState, useReducer } from "react";
+import { useState, useReducer, useMemo } from "react";
 import { toast } from "sonner";
-import { Package, Plus, Minus, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Package, Plus, Minus, AlertTriangle, Pencil, Trash2, Search } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
 import { Modal, FormField, inputCls } from "@/components/sigmalab/Modal";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,24 @@ import { store, useStore, type InsumoStock } from "@/lib/store";
 import { useIsReadOnly } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-const EMPTY: InsumoStock = { nombre: "", unidad: "", stock: 0, minimo: 0 };
+const TIPOS_INSUMO = ["Limpieza", "Herramienta", "Repuesto", "Oficina", "Otro"];
+const EMPTY: InsumoStock = { nombre: "", tipo: "", unidad: "", stock: 0, minimo: 0 };
 
 export function InsumosView() {
   const insumos = useStore((s) => s.insumos);
   const readOnly = useIsReadOnly();
+  const [filtroTipo, setFiltroTipo] = useState("");
+  const [filtroStock, setFiltroStock] = useState(""); // "bajo" | "normal" | ""
+  const [searchQ, setSearchQ] = useState("");
+
+  const filtered = useMemo(() => insumos.filter((i) => {
+    if (filtroTipo && i.tipo !== filtroTipo) return false;
+    if (filtroStock === "bajo" && i.stock >= i.minimo) return false;
+    if (filtroStock === "normal" && i.stock < i.minimo) return false;
+    if (searchQ && !i.nombre.toLowerCase().includes(searchQ.toLowerCase())) return false;
+    return true;
+  }), [insumos, filtroTipo, filtroStock, searchQ]);
+
   const [adjust, dispatchAdjust] = useReducer(
     (state: any, action: { type: string; field?: string; value?: any }) => {
       switch (action.type) {
@@ -75,6 +88,12 @@ export function InsumosView() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <FormField label="Nombre" required><input value={form.nombre} disabled={!!modal.editing} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className={inputCls} aria-label="Nombre" /></FormField>
       <FormField label="Unidad" required><input value={form.unidad} placeholder="ml, unidades..." onChange={(e) => setForm({ ...form, unidad: e.target.value })} className={inputCls} aria-label="Unidad" /></FormField>
+      <FormField label="Tipo">
+        <select value={form.tipo ?? ""} onChange={(e) => setForm({ ...form, tipo: e.target.value })} className={inputCls} aria-label="Tipo">
+          <option value="">Seleccionar tipo</option>
+          {TIPOS_INSUMO.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </FormField>
       <FormField label="Stock inicial"><input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} className={inputCls} aria-label="Stock inicial" /></FormField>
       <FormField label="Mínimo"><input type="number" value={form.minimo} onChange={(e) => setForm({ ...form, minimo: Number(e.target.value) })} className={inputCls} aria-label="Mínimo" /></FormField>
     </div>
@@ -94,8 +113,27 @@ export function InsumosView() {
         )}
       </div>
 
+      <Panel title="Filtros">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
+            <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Buscar por nombre..." className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm" aria-label="Buscar insumo" />
+          </div>
+          <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Filtrar por tipo">
+            <option value="">Todos los tipos</option>
+            {TIPOS_INSUMO.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={filtroStock} onChange={(e) => setFiltroStock(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Filtrar por nivel de stock">
+            <option value="">Todo el stock</option>
+            <option value="bajo">Stock bajo</option>
+            <option value="normal">Stock normal</option>
+          </select>
+          <p className="self-center text-right text-xs text-muted-foreground">{filtered.length} de {insumos.length}</p>
+        </div>
+      </Panel>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {insumos.map((i) => {
+        {filtered.map((i) => {
           const low = i.stock < i.minimo;
           return (
             <div key={i.nombre} className={cn("rounded-xl border bg-card p-5 shadow-sm", low ? "border-danger/40" : "border-slate-100")}>

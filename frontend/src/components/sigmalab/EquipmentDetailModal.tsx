@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { XCircle, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "./StatusBadge";
+import { Modal, FormField, inputCls } from "./Modal";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MantDetalleModal } from "./MantDetalleModal";
-import { useStore, type MantDetalle } from "@/lib/store";
+import { store, useStore, type MantDetalle } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 
 type Equipo = {
   codigo: string; nombre: string; lab: string; fila: string; puesto: string;
@@ -34,13 +39,65 @@ const FALLBACK_HISTORIAL = [
 export function EquipmentDetailModal({ open, onOpenChange, equipo, initialTab = "info" }: Props) {
   const [tab, setTab] = useState("info");
   const [detalleSel, setDetalleSel] = useState<MantDetalle | null>(null);
+  const [decomOpen, setDecomOpen] = useState(false);
+  const [decomMotivo, setDecomMotivo] = useState("");
+  const [replaceOpen, setReplaceOpen] = useState(false);
+  const [replaceForm, setReplaceForm] = useState({ nuevoCodigo: "", nombre: "", marca: "", modelo: "", numeroSerie: "" });
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
   const detallesAll = useStore((s) => s.detalles);
+  const labs = useStore((s) => s.labs);
   const prevOpen = useRef(open);
 
   useEffect(() => {
     if (open && !prevOpen.current) setTab(initialTab);
     prevOpen.current = open;
   }, [open, initialTab]);
+
+  useEffect(() => {
+    if (equipo && replaceOpen) {
+      setReplaceForm({
+        nuevoCodigo: equipo.codigo.replace(/(\d+)$/, (m) => String(Number(m) + 100).padStart(m.length, "0")),
+        nombre: equipo.nombre,
+        marca: equipo.marca,
+        modelo: equipo.modelo,
+        numeroSerie: "",
+      });
+    }
+  }, [equipo, replaceOpen]);
+
+  const isEncargado = user?.role === "encargado";
+
+  const handleDecommission = async () => {
+    if (!equipo || !decomMotivo.trim()) return;
+    setLoading(true);
+    try {
+      await store.decommissionEquipo(equipo.codigo, decomMotivo);
+      toast.success(`Equipo ${equipo.codigo} dado de baja`);
+      setDecomOpen(false);
+      setDecomMotivo("");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al dar de baja");
+    } finally { setLoading(false); }
+  };
+
+  const handleReplace = async () => {
+    if (!equipo || !replaceForm.nuevoCodigo || !replaceForm.nombre) return;
+    setLoading(true);
+    try {
+      await store.replaceEquipo(equipo.codigo, {
+        ...replaceForm,
+        laboratorioId: labs.find((l) => l.nombre === equipo.lab)?.id || equipo.lab,
+        fila: equipo.fila, puesto: equipo.puesto,
+        sistemaOperativo: equipo.so,
+      }, decomMotivo || undefined);
+      toast.success(`Equipo reemplazado: ${equipo.codigo} → ${replaceForm.nuevoCodigo}`);
+      setReplaceOpen(false);
+      setDecomMotivo("");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Error al reemplazar equipo");
+    } finally { setLoading(false); }
+  };
 
   if (!equipo) return null;
   const historialReal = detallesAll.filter((d) => d.equipo === equipo.codigo);
@@ -187,7 +244,69 @@ export function EquipmentDetailModal({ open, onOpenChange, equipo, initialTab = 
           )}
         </div>
         
+        
+        {/* Action buttons */}
+        {isEncargado && equipo.estado !== "De baja" && (
+          <div className="border-t border-slate-200 p-4 bg-white shrink-0 flex gap-3 justify-end">
+            <Button variant="destructive" onClick={() => { setDecomMotivo(""); setDecomOpen(true); }}>
+              <XCircle className="size-4 mr-1" /> Dar de baja
+            </Button>
+            <Button className="bg-navy" onClick={() => { setDecomMotivo(""); setReplaceOpen(true); }}>
+              <RefreshCw className="size-4 mr-1" /> Reemplazar equipo
+            </Button>
+          </div>
+        )}
+
         <MantDetalleModal detalle={detalleSel} open={!!detalleSel} onOpenChange={(v) => !v && setDetalleSel(null)} />
+
+        {/* Decommission dialog */}
+        <Modal open={decomOpen} onOpenChange={(v) => { if (!loading) setDecomOpen(v); }} title="Dar de baja equipo" size="sm"
+          footer={<><Button variant="outline" disabled={loading} onClick={() => setDecomOpen(false)}>Cancelar</Button><Button variant="destructive" disabled={!decomMotivo.trim() || loading} onClick={handleDecommission}>{loading ? "Procesando..." : "Confirmar baja"}</Button></>}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">¿Está seguro de dar de baja <span className="font-semibold text-navy">{equipo.codigo}</span>?</p>
+            <FormField label="Motivo de baja" required>
+              <textarea value={decomMotivo} onChange={(e) => setDecomMotivo(e.target.value)}
+                placeholder="Ej: Daño irreparable en placa madre, equipo obsoleto..."
+                className={inputCls} rows={3} />
+            </FormField>
+            <p className="text-xs text-muted-foreground">Los periféricos asignados a este equipo también serán marcados como "De baja".</p>
+          </div>
+        </Modal>
+
+        {/* Replace dialog */}
+        <Modal open={replaceOpen} onOpenChange={(v) => { if (!loading) setReplaceOpen(v); }} title="Reemplazar equipo" size="lg"
+          footer={<><Button variant="outline" disabled={loading} onClick={() => setReplaceOpen(false)}>Cancelar</Button><Button className="bg-navy" disabled={!replaceForm.nuevoCodigo || !replaceForm.nombre || loading} onClick={handleReplace}>{loading ? "Procesando..." : "Dar de baja y reemplazar"}</Button></>}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">El equipo <span className="font-semibold text-navy">{equipo.codigo}</span> será dado de baja y se creará uno nuevo.</p>
+            {!replaceOpen ? null : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField label="Nuevo código" required>
+                  <input value={replaceForm.nuevoCodigo} onChange={(e) => setReplaceForm({ ...replaceForm, nuevoCodigo: e.target.value })} className={inputCls} />
+                </FormField>
+                <FormField label="Nombre" required>
+                  <input value={replaceForm.nombre} onChange={(e) => setReplaceForm({ ...replaceForm, nombre: e.target.value })} className={inputCls} />
+                </FormField>
+                <FormField label="Marca">
+                  <input value={replaceForm.marca} onChange={(e) => setReplaceForm({ ...replaceForm, marca: e.target.value })} className={inputCls} />
+                </FormField>
+                <FormField label="Modelo">
+                  <input value={replaceForm.modelo} onChange={(e) => setReplaceForm({ ...replaceForm, modelo: e.target.value })} className={inputCls} />
+                </FormField>
+                <FormField label="N° Serie">
+                  <input value={replaceForm.numeroSerie} onChange={(e) => setReplaceForm({ ...replaceForm, numeroSerie: e.target.value })} className={inputCls} />
+                </FormField>
+                <div className="md:col-span-2">
+                  <FormField label="Motivo de baja (opcional)">
+                    <textarea value={decomMotivo} onChange={(e) => setDecomMotivo(e.target.value)}
+                      placeholder="Ej: Daño irreparable, rendimiento insuficiente..."
+                      className={inputCls} rows={2} />
+                  </FormField>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">Los periféricos asignados al equipo anterior serán reasignados automáticamente al nuevo equipo.</p>
+          </div>
+        </Modal>
       </DialogContent>
     </Dialog>
   );

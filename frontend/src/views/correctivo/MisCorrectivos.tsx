@@ -16,24 +16,56 @@ const norm = (e: string): "Completado" | "En proceso" | "Pendiente" => {
   return "Pendiente";
 };
 
+const TIPOS = ["Hardware", "Software", "Red", "Periférico", "Otro"];
+
 export function MisCorrectivosView() {
   const { user } = useAuth();
   const hist = useStore((s) => s.histCorrectivos);
   const detalles = useStore((s) => s.detalles);
   const equipos = useStore((s) => s.equipos);
+  const labs = useStore((s) => s.labs);
   const { setView } = useApp();
   const [q, setQ] = useState("");
   const [estadoF, setEstadoF] = useState("");
+  const [labF, setLabF] = useState("");
+  const [tipoF, setTipoF] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
   const [detSel, setDetSel] = useState<MantDetalle | null>(null);
 
   // Sólo mis mantenimientos
   const tecnicoName = getSessionFullName(user);
   const mios = useMemo(() => hist.filter((h) => h.tecnico === tecnicoName), [hist, tecnicoName]);
 
-  const filtered = useMemo(() => mios.filter((h) =>
-    (!q || h.equipo.toLowerCase().includes(q.toLowerCase()) || h.problema.toLowerCase().includes(q.toLowerCase()))
-    && (!estadoF || norm(h.estado) === estadoF),
-  ), [mios, q, estadoF]);
+  const filtered = useMemo(() => mios.filter((h) => {
+    if (q && !h.equipo.toLowerCase().includes(q.toLowerCase()) && !h.problema.toLowerCase().includes(q.toLowerCase())) return false;
+    if (estadoF && norm(h.estado) !== estadoF) return false;
+    if (labF) {
+      const eq = equipos.find((e) => e.codigo === h.equipo);
+      if (!eq || eq.lab !== labF) return false;
+    }
+    if (tipoF) {
+      const d = detalles.find((x) => x.tipo === "Correctivo" && x.equipo === h.equipo && x.fecha === h.fecha && x.tecnico === h.tecnico);
+      if (!d || d.tipoIncidencia !== tipoF) return false;
+    }
+    if (fechaDesde) {
+      const [dd, mm, yy] = h.fecha.split("/");
+      const d = new Date(+yy, +mm - 1, +dd);
+      const [ad, am, ay] = fechaDesde.split("-");
+      if (d < new Date(+ay, +am - 1, +ad)) return false;
+    }
+    if (fechaHasta) {
+      const [dd, mm, yy] = h.fecha.split("/");
+      const d = new Date(+yy, +mm - 1, +dd);
+      const [hd, hm, hy] = fechaHasta.split("-");
+      if (d > new Date(+hy, +hm - 1, +hd)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const [ad, am, ay] = a.fecha.split("/");
+    const [bd, bm, by] = b.fecha.split("/");
+    return new Date(+by, +bm - 1, +bd).getTime() - new Date(+ay, +am - 1, +ad).getTime();
+  }), [mios, q, estadoF, labF, tipoF, fechaDesde, fechaHasta, equipos, detalles]);
 
   const completados = mios.filter((h) => norm(h.estado) === "Completado").length;
   const enProc = mios.filter((h) => norm(h.estado) === "En proceso").length;
@@ -93,12 +125,28 @@ export function MisCorrectivosView() {
       </div>
 
       <Panel title="Filtros">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar equipo o problema..." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm md:col-span-2" aria-label="Buscar equipo o problema" />
           <select value={estadoF} onChange={(e) => setEstadoF(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Filtrar por estado">
             <option value="">Todos los estados</option>
             {ESTADOS_FILTRO.map((s) => <option key={s}>{s}</option>)}
           </select>
+          <select value={labF} onChange={(e) => setLabF(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Filtrar por laboratorio">
+            <option value="">Todos los laboratorios</option>
+            {labs.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+          </select>
+          <select value={tipoF} onChange={(e) => setTipoF(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Filtrar por tipo">
+            <option value="">Todos los tipos</option>
+            {TIPOS.map((t) => <option key={t}>{t}</option>)}
+          </select>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            Desde
+            <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" aria-label="Fecha desde" />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            Hasta
+            <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" aria-label="Fecha hasta" />
+          </label>
         </div>
       </Panel>
 

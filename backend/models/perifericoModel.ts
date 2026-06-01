@@ -22,13 +22,15 @@ export async function findPerifericoById(id: string) {
 
 export async function createPeriferico(data: {
   id: string; tipo: string; marca?: string; modelo?: string;
-  numeroSerie?: string; laboratorioId?: string; equipoCodigo?: string; estado?: string;
+  numeroSerie?: string; codigoItic?: string; codigoFacultativo?: string; codigoUmsa?: string;
+  laboratorioId?: string; equipoCodigo?: string; estado?: string;
 }) {
   return prisma.periferico.create({ data, include: { laboratorio: true, equipo: true } });
 }
 
 export async function updatePeriferico(id: string, data: Partial<{
   tipo: string; marca: string; modelo: string; numeroSerie: string;
+  codigoItic: string; codigoFacultativo: string; codigoUmsa: string;
   laboratorioId: string; equipoCodigo: string; estado: string;
 }>) {
   const existing = await prisma.periferico.findUnique({ where: { id } });

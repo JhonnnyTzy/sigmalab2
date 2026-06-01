@@ -1,13 +1,14 @@
 import { prisma } from "../config/database";
 import { AppError } from "../middlewares/errorHandler";
 
-export async function findAllReportes(params?: { pasanteId?: string; estado?: string; prioridad?: string }) {
+export async function findAllReportes(params?: { pasanteId?: string; estado?: string; prioridad?: string; laboratorioId?: string }) {
   return prisma.reportePasante.findMany({
     where: {
       activo: true,
       ...(params?.pasanteId && { pasanteId: params.pasanteId }),
       ...(params?.estado && { estado: params.estado }),
       ...(params?.prioridad && { prioridad: params.prioridad }),
+      ...(params?.laboratorioId && { laboratorioId: params.laboratorioId }),
     },
     include: {
       pasante: { include: { persona: true, rol: true } },

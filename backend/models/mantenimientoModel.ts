@@ -1,6 +1,25 @@
 import { prisma } from "../config/database";
 import { AppError } from "../middlewares/errorHandler";
 
+function parseDate(str: string): Date {
+  // Soporta DD/MM/YYYY y YYYY-MM-DD
+  // Si viene con hora (DD/MM/YYYYTHH:MM), extraer solo la fecha
+  const clean = str.split("T")[0];
+  const parts = clean.split("/");
+  if (parts.length === 3) {
+    const [d, m, y] = parts;
+    const date = new Date(`${y}-${m}-${d}`);
+    // Reaplicar la hora si venía incluida
+    if (str.includes("T")) {
+      const time = str.split("T")[1];
+      const [h, min] = time.split(":");
+      date.setHours(parseInt(h, 10), parseInt(min, 10), 0, 0);
+    }
+    return date;
+  }
+  return new Date(str);
+}
+
 export async function findAllMantenimientos(params?: { tipoId?: string; estadoId?: string; equipoCodigo?: string; tecnicoId?: string; laboratorioId?: string }) {
   return prisma.mantenimiento.findMany({
     where: {
@@ -59,9 +78,9 @@ export async function createMantenimiento(data: {
       equipoCodigo: data.equipoCodigo,
       tecnicoId: data.tecnicoId,
       laboratorioId: data.laboratorioId || equipo.laboratorioId,
-      fecha: new Date(data.fecha),
-      horaInicio: data.horaInicio ? new Date(`${data.fecha}T${data.horaInicio}`) : undefined,
-      horaFin: data.horaFin ? new Date(`${data.fecha}T${data.horaFin}`) : undefined,
+      fecha: parseDate(data.fecha),
+      horaInicio: data.horaInicio ? parseDate(`${data.fecha}T${data.horaInicio}`) : undefined,
+      horaFin: data.horaFin ? parseDate(`${data.fecha}T${data.horaFin}`) : undefined,
       estadoId: data.estadoId,
     },
     include: { tipo: true, estado: true, equipo: true, tecnico: { include: { persona: true } } },
@@ -80,9 +99,9 @@ export async function updateMantenimiento(id: string, data: Partial<{
   if (!existing) throw new AppError("Mantenimiento no encontrado", 404);
 
   const updateData: any = { ...data };
-  if (data.fecha) updateData.fecha = new Date(data.fecha);
-  if (data.horaInicio) updateData.horaInicio = new Date(`${existing.fecha.toISOString().split("T")[0]}T${data.horaInicio}`);
-  if (data.horaFin) updateData.horaFin = new Date(`${existing.fecha.toISOString().split("T")[0]}T${data.horaFin}`);
+  if (data.fecha) updateData.fecha = parseDate(data.fecha);
+  if (data.horaInicio) updateData.horaInicio = parseDate(`${existing.fecha.toISOString().split("T")[0]}T${data.horaInicio}`);
+  if (data.horaFin) updateData.horaFin = parseDate(`${existing.fecha.toISOString().split("T")[0]}T${data.horaFin}`);
 
   return prisma.mantenimiento.update({
     where: { id },

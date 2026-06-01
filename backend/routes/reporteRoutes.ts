@@ -11,7 +11,7 @@ router.use(authenticate);
 router.get("/", reporteController.getAll);
 router.get("/:id", reporteController.getById);
 router.post("/", authorize("preventivo", "correctivo", "docente", "estudiante", "encargado"), validate(createReporteSchema), reporteController.create);
-router.patch("/:id", authorize("encargado"), validate(updateReporteSchema), reporteController.update);
+router.patch("/:id", authorize("encargado", "preventivo", "correctivo"), validate(updateReporteSchema), reporteController.update);
 router.delete("/:id", authorize("encargado"), reporteController.remove);
 
 export default router;

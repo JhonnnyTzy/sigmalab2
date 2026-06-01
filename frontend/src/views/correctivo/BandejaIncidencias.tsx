@@ -15,8 +15,7 @@ export function BandejaCorrectivoView() {
   const asignaciones = useStore((s) => s.asignaciones);
   const reportes = useStore((s) => s.reportesPasante);
 
-  const myKey = getSessionUsername(user);
-  const misAsignadas = asignaciones.filter((a) => a.asignadoA === myKey);
+  const misAsignadas = asignaciones.filter((a) => a.asignadoA === user?.id || a.asignadoA === getSessionUsername(user));
 
   const [verAsig, setVerAsig] = useState<Asignacion | null>(null);
   const [resolverAsig, setResolverAsig] = useState<Asignacion | null>(null);
@@ -164,7 +163,7 @@ function ResolverAsignacion({ asig, onClose }: { asig: Asignacion | null; onClos
     if (!asig) return;
     if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
     try {
-      await store.updateAsignacion(asig.id, { estado });
+      await store.updateAsignacion(asig.id, { estado, resolucionDetalle: detalle });
       toast.success(`Incidencia marcada como ${estado}`);
       setDetalle(""); setEstado("En proceso"); onClose();
     } catch (e: any) {
@@ -203,7 +202,7 @@ function ResolverReporte({ rep, onClose }: { rep: ReportePasante | null; onClose
     if (!rep) return;
     if (!detalle.trim()) { toast.error("Agrega un detalle de resolución"); return; }
     try {
-      await store.updateReportePasante(rep.id, { estado });
+      await store.updateReportePasante(rep.id, { estado, resolucionDetalle: detalle });
       toast.success(`Incidencia marcada como ${estado}`);
       setDetalle(""); setEstado("En proceso"); onClose();
     } catch (e: any) {

@@ -5,12 +5,13 @@ import { Panel } from "@/components/sigmalab/Panel";
 import { StatusBadge } from "@/components/sigmalab/StatusBadge";
 import { Modal, FormField, inputCls } from "@/components/sigmalab/Modal";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { store, useStore, type Periferico } from "@/lib/store";
 import { useIsReadOnly } from "@/lib/auth";
 
 const TIPOS = ["Monitor", "Teclado", "Mouse", "Impresora", "Proyector", "Switch", "Router", "Scanner", "Otro"];
 const ESTADOS = ["Funcionando", "En mantenimiento", "De baja"];
-const EMPTY: Periferico = { id: "", tipo: "Monitor", marca: "", modelo: "", serie: "", asignadoA: "", estado: "Funcionando" };
+const EMPTY: Periferico = { id: "", tipo: "Monitor", marca: "", modelo: "", serie: "", codigoItic: "", codigoFacultativo: "", codigoUmsa: "", asignadoA: "", estado: "Funcionando" };
 
 export function PerifericosView() {
   const perifericos = useStore((s) => s.perifericos);
@@ -35,9 +36,10 @@ export function PerifericosView() {
   );
   const [form, setForm] = useState<Periferico>(EMPTY);
 
+  const q = filtros.q.toLowerCase();
   const filtered = perifericos.filter((p) =>
     (!filtros.tipo || p.tipo === filtros.tipo) &&
-    (!filtros.q || p.id.toLowerCase().includes(filtros.q.toLowerCase()) || p.marca.toLowerCase().includes(filtros.q.toLowerCase())),
+    (!q || p.id.toLowerCase().includes(q) || p.marca.toLowerCase().includes(q) || p.modelo.toLowerCase().includes(q) || p.serie.toLowerCase().includes(q) || p.tipo.toLowerCase().includes(q) || p.asignadoA.toLowerCase().includes(q)),
   );
 
   const openCreate = () => {
@@ -89,6 +91,9 @@ export function PerifericosView() {
       <FormField label="Marca" required><input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} className={inputCls} aria-label="Marca" /></FormField>
       <FormField label="Modelo"><input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} className={inputCls} aria-label="Modelo" /></FormField>
       <FormField label="Serie"><input value={form.serie} onChange={(e) => setForm({ ...form, serie: e.target.value })} className={inputCls} aria-label="Serie" /></FormField>
+      <FormField label="Cód. ITIC"><input value={form.codigoItic ?? ""} onChange={(e) => setForm({ ...form, codigoItic: e.target.value })} className={inputCls} aria-label="Código ITIC" /></FormField>
+      <FormField label="Cód. Facultativo"><input value={form.codigoFacultativo ?? ""} onChange={(e) => setForm({ ...form, codigoFacultativo: e.target.value })} className={inputCls} aria-label="Código Facultativo" /></FormField>
+      <FormField label="Cód. UMSA"><input value={form.codigoUmsa ?? ""} onChange={(e) => setForm({ ...form, codigoUmsa: e.target.value })} className={inputCls} aria-label="Código UMSA" /></FormField>
       <FormField label="Asignado a"><input value={form.asignadoA} placeholder="PC-LAB1-001 o Lab 1" onChange={(e) => setForm({ ...form, asignadoA: e.target.value })} className={inputCls} aria-label="Asignado a" /></FormField>
       <FormField label="Estado">
         <select value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })} className={inputCls} aria-label="Estado">
@@ -113,14 +118,16 @@ export function PerifericosView() {
       </div>
 
       <Panel title="Filtros">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <select value={filtros.tipo} onChange={(e) => dispatchFiltros({ type: "SET_FIELD", field: "tipo", value: e.target.value })} className={inputCls} aria-label="Filtrar por tipo">
-            <option value="">Todos los tipos</option>
-            {TIPOS.map((t) => <option key={t}>{t}</option>)}
-          </select>
-          <div className="relative md:col-span-2">
+        <div className="space-y-3">
+          <Tabs value={filtros.tipo} onValueChange={(v) => dispatchFiltros({ type: "SET_FIELD", field: "tipo", value: v })}>
+            <TabsList>
+              <TabsTrigger value="">Todos</TabsTrigger>
+              {TIPOS.map((t) => <TabsTrigger key={t} value={t}>{t}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
+          <div className="relative">
             <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
-            <input value={filtros.q} onChange={(e) => dispatchFiltros({ type: "SET_FIELD", field: "q", value: e.target.value })} placeholder="Buscar por código o marca..." className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm" aria-label="Buscar periférico" />
+            <input value={filtros.q} onChange={(e) => dispatchFiltros({ type: "SET_FIELD", field: "q", value: e.target.value })} placeholder="Buscar por código, marca, modelo, serie o tipo..." className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm" aria-label="Buscar periférico" />
           </div>
         </div>
       </Panel>

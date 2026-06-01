@@ -32,8 +32,10 @@ export function PillSelector({ options, value, onChange }: Props) {
   );
 }
 
-export function ChecklistTable({ items }: { items: string[] }) {
-  const [state, setState] = useState<Record<string, string>>({});
+export function ChecklistTable({ items, estados, observaciones, onEstadoChange, onObsChange }: {
+  items: string[]; estados: Record<string, string>; observaciones: Record<string, string>;
+  onEstadoChange: (item: string, estado: string) => void; onObsChange?: (item: string, obs: string) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-100">
       <table className="w-full text-sm">
@@ -51,12 +53,13 @@ export function ChecklistTable({ items }: { items: string[] }) {
               <td className="px-4 py-2.5">
                 <PillSelector
                   options={["OK", "Regular", "Pendiente"]}
-                  value={state[item] ?? ""}
-                  onChange={(v) => setState((s) => ({ ...s, [item]: v }))}
+                  value={estados[item] ?? ""}
+                  onChange={(v) => onEstadoChange(item, v)}
                 />
               </td>
               <td className="px-4 py-2.5">
-                <input className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs" placeholder="Sin observaciones" aria-label="Observaciones" />
+                <input value={observaciones[item] ?? ""} onChange={(e) => onObsChange?.(item, e.target.value)}
+                  className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs" placeholder="Sin observaciones" aria-label="Observaciones" />
               </td>
             </tr>
           ))}

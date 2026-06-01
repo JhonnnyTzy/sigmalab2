@@ -75,6 +75,7 @@ function ViewRenderer({ role, view }: { role: string; view: string }) {
   }
   if (role === "preventivo") {
     if (view === "dashboard") return <PreventivoDashboard />;
+    if (view === "asignados") return <AsignadosView />;
     if (view === "nuevo-mant") return <NuevoMantPreventivoView />;
     if (view === "incidencias-bandeja") return <BandejaPreventivoView />;
     if (view === "mis-mant") return <MisMantenimientosView />;
@@ -118,7 +119,13 @@ function App() {
   // Añadimos el estado para controlar si el menú lateral está abierto en celulares
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  useEffect(() => { if (isAuthenticated) initFromApi(); }, [isAuthenticated]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    initFromApi();
+    const onVisible = () => { if (document.visibilityState === "visible") initFromApi(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (

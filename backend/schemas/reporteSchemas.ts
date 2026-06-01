@@ -12,7 +12,7 @@ export const createReporteSchema = z.object({
 });
 
 export const updateReporteSchema = z.object({
-  estado: z.enum(["Nuevo", "Visto", "En proceso", "Resuelto"]).optional(),
+  estado: z.enum(["Nuevo", "Visto", "En proceso", "Nuevo mantenimiento asignado", "Pendiente", "Completado", "Resuelto"]).optional(),
   resolucionDetalle: z.string().optional(),
   atendidoPor: z.string().optional(),
   prioridad: z.enum(["Alta", "Media", "Baja"]).optional(),

@@ -72,6 +72,12 @@ export async function updateIncidencia(id: string, data: Partial<{
   });
 }
 
+export async function deleteIncidencia(id: string) {
+  const existing = await prisma.incidencia.findUnique({ where: { id } });
+  if (!existing) throw new AppError("Incidencia no encontrada", 404);
+  await prisma.incidencia.update({ where: { id }, data: { activo: false } });
+}
+
 export async function getIncidenciaStats() {
   const porEstado = await prisma.incidencia.groupBy({ by: ["estadoId"], where: { activo: true }, _count: { estadoId: true } });
   const estados = await prisma.estadoIncidencia.findMany();

@@ -11,22 +11,27 @@ export interface AuthAccount {
   nombres: string;
   paterno: string;
   materno?: string;
+  ci?: string;
+  direccion?: string;
   email?: string;
   registro?: string;
   celular?: string;
   activo?: boolean;
+  fechaIngreso?: string;
+  createdAt?: string;
 }
 
 export interface SessionUser {
   id: string;
   roleId: string;
   roleName?: string;
-  role: string; // alias de roleId para compatibilidad
+  role: string;
   nombres: string;
   paterno: string;
   materno?: string | null;
   email?: string | null;
   registro?: string | null;
+  fotoUrl?: string | null;
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -59,9 +64,32 @@ const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((fn) => fn());
 
 function persist() {
-  if (session) localStorage.setItem(STORAGE_SESSION, JSON.stringify(session));
-  else localStorage.removeItem(STORAGE_SESSION);
+  try {
+    if (session) localStorage.setItem(STORAGE_SESSION, JSON.stringify(session));
+    else localStorage.removeItem(STORAGE_SESSION);
+  } catch (e) {
+    console.warn("auth: failed to persist session to localStorage", e);
+  }
 }
+
+/** Try to refresh session from /auth/profile if fotoUrl is missing */
+let _refreshing = false;
+async function tryRefreshSession() {
+  if (_refreshing || !session) return;
+  _refreshing = true;
+  try {
+    const token = localStorage.getItem(STORAGE_TOKEN);
+    if (!token) return;
+    const res = await apiClient.get("/auth/profile");
+    updateSession(res.data);
+  } catch {
+    // silent – offline or token expired, use cached session
+  } finally {
+    _refreshing = false;
+  }
+}
+// Auto-refresh on module load if fotoUrl missing
+if (session && !session.fotoUrl) tryRefreshSession();
 
 export const auth = {
   getSession: () => session,
@@ -82,6 +110,7 @@ export const auth = {
         materno: user.materno || null,
         email: user.email || null,
         registro: user.registro || null,
+        fotoUrl: user.fotoUrl || null,
       };
       persist();
       notify();
@@ -100,7 +129,7 @@ export const auth = {
   },
 
   /** Update local session from a profile API response */
-  updateSession(profile: { id: string; roleId: string; nombres: string; paterno: string; materno?: string | null; email?: string | null; registro?: string | null }) {
+  updateSession(profile: { id: string; roleId: string; nombres: string; paterno: string; materno?: string | null; email?: string | null; registro?: string | null; fotoUrl?: string | null }) {
     session = {
       id: profile.id,
       roleId: profile.roleId,
@@ -111,6 +140,7 @@ export const auth = {
       materno: profile.materno || null,
       email: profile.email || null,
       registro: profile.registro || null,
+      fotoUrl: profile.fotoUrl || null,
     };
     persist();
     notify();

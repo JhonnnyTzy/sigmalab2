@@ -16,6 +16,7 @@ export async function findInsumoByNombre(nombre: string) {
 
 export async function createInsumo(data: {
   nombre: string;
+  tipo?: string;
   unidadMedida: string;
   stock?: number;
   stockMinimo?: number;

@@ -15,13 +15,13 @@ export function Modal({ open, onOpenChange, title, description, children, footer
   const widths = { sm: "max-w-md", md: "max-w-2xl", lg: "max-w-4xl" };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={widths[size]}>
+      <DialogContent className={widths[size] + " max-h-[85vh]"}>
         <DialogHeader>
           <DialogTitle className="text-navy">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="space-y-4 py-2">{children}</div>
-        {footer && <DialogFooter>{footer}</DialogFooter>}
+        <div className="max-h-[65vh] space-y-4 overflow-y-auto py-2">{children}</div>
+        {footer && <DialogFooter className="shrink-0">{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
   );

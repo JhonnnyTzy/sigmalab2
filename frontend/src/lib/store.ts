@@ -30,6 +30,7 @@ export type HistCorrectivo = (typeof HC0)[number];
 
 export interface InsumoStock {
   nombre: string;
+  tipo?: string;
   unidad: string;
   stock: number;
   minimo: number;
@@ -41,6 +42,9 @@ export interface Periferico {
   marca: string;
   modelo: string;
   serie: string;
+  codigoItic?: string;
+  codigoFacultativo?: string;
+  codigoUmsa?: string;
   asignadoA: string;
   estado: string;
 }
@@ -57,6 +61,7 @@ export interface LogEntry {
   estado?: "Éxito" | "Error" | "Advertencia";
   descripcion?: string;
   cambios?: { campo: string; antes?: string; despues?: string }[];
+  ipOrigen?: string;
 }
 
 export interface MantDetalle {
@@ -90,11 +95,12 @@ export interface Asignacion {
   id: string;
   equipo: string;
   lab: string;
-  asignadoA: string; // username pasante correctivo
+  asignadoA: string; // user id (e.g. "u-corr") o username legacy
   problema: string;
   prioridad: "Alta" | "Media" | "Baja";
   fecha: string;
   estado: "Pendiente" | "En proceso" | "Completado";
+  reporteId?: string;
 }
 
 export interface ReportePasante {
@@ -109,7 +115,7 @@ export interface ReportePasante {
   categoria: string;
   prioridad: "Alta" | "Media" | "Baja";
   fecha: string;
-  estado: "Nuevo" | "Visto" | "Resuelto" | "Pendiente" | "En proceso" | "Completado";
+  estado: "Nuevo" | "Visto" | "Resuelto" | "Pendiente" | "En proceso" | "Nuevo mantenimiento asignado" | "Completado";
   resolucionDetalle?: string;
 }
 
@@ -118,6 +124,7 @@ export interface CorrectivoPrefill {
   histKey?: { equipo: string; fecha: string; tecnico: string };
   lab?: string;
   equipo?: string;
+  busq?: string;
   descripcion?: string;
   problemaTitulo?: string;
   fecha?: string; // YYYY-MM-DD
@@ -130,6 +137,16 @@ export interface CorrectivoPrefill {
   insumos?: { insumo: string }[];
   estado?: "Completado" | "En proceso" | "Pendiente";
   tipoIncidencia?: string;
+}
+
+export interface PreventivoPrefill {
+  equipo?: string;
+  busq?: string;
+  lab?: string;
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
+  estado?: string;
 }
 
 export const INVENTARIO_CATEGORIAS = [
@@ -257,14 +274,16 @@ const DETALLES_SEED: MantDetalle[] = [
 ];
 
 const ASIGNACIONES_SEED: Asignacion[] = [
-  { id: "AS-1", equipo: "PC-LASIN1-004", lab: "LASIN 1", asignadoA: "jarias", problema: "No enciende, posible falla de fuente de poder", prioridad: "Alta", fecha: "18/04/2026", estado: "Pendiente" },
-  { id: "AS-2", equipo: "PC-LAB2-005", lab: "Lab 2", asignadoA: "jarias", problema: "Pantalla azul intermitente", prioridad: "Media", fecha: "17/04/2026", estado: "En proceso" },
-  { id: "AS-3", equipo: "PC-LAB1-002", lab: "Lab 1", asignadoA: "ysarzuri", problema: "Equipo lento, requiere mantenimiento preventivo urgente", prioridad: "Media", fecha: "19/04/2026", estado: "Pendiente" },
-  { id: "AS-4", equipo: "PC-LAB3-002", lab: "Lab 3", asignadoA: "ysarzuri", problema: "Limpieza profunda y revisión de software", prioridad: "Baja", fecha: "18/04/2026", estado: "En proceso" },
+  { id: "AS-001", equipo: "PC-LASIN1-004", lab: "LASIN 1", asignadoA: "u-corr", problema: "No enciende, posible falla de fuente de poder", prioridad: "Alta", fecha: "18/04/2026", estado: "Pendiente" },
+  { id: "AS-002", equipo: "PC-LAB2-005", lab: "Lab 2", asignadoA: "u-corr", problema: "Pantalla azul intermitente", prioridad: "Media", fecha: "17/04/2026", estado: "En proceso" },
+  { id: "AS-003", equipo: "PC-LAB1-002", lab: "Lab 1", asignadoA: "u-prev", problema: "Equipo lento, requiere mantenimiento preventivo urgente", prioridad: "Media", fecha: "19/04/2026", estado: "Pendiente" },
+  { id: "AS-004", equipo: "PC-LAB3-002", lab: "Lab 3", asignadoA: "u-prev", problema: "Limpieza profunda y revisión de software", prioridad: "Baja", fecha: "18/04/2026", estado: "En proceso" },
 ];
 
 const REPORTES_SEED: ReportePasante[] = [
-  { id: "RP-1", pasante: "ysarzuri", rolReporte: "preventivo", titulo: "Cables de red desconectados", descripcion: "Se encontraron 3 cables de red sueltos detrás del rack del Lab 1", laboratorio: "Lab 1", ubicacion: "Piso 1", categoria: "Red", prioridad: "Media", fecha: "19/04/2026", estado: "Nuevo" },
+  { id: "RP-001", pasante: "ysarzuri", rolReporte: "preventivo", titulo: "Cables de red desconectados", descripcion: "Se encontraron 3 cables de red sueltos detrás del rack del Lab 1", laboratorio: "Lab 1", ubicacion: "Piso 1", categoria: "Red", prioridad: "Media", fecha: "19/04/2026", estado: "Nuevo" },
+  { id: "RP-002", pasante: "ysarzuri", rolReporte: "preventivo", titulo: "Foco fundido en Laboratorio 3", descripcion: "El foco del pasillo frente al Lab 3 está fundido", laboratorio: "Lab 3", ubicacion: "Pasillo exterior", categoria: "Infraestructura", prioridad: "Baja", fecha: "16/04/2026", estado: "Visto" },
+  { id: "RP-003", pasante: "u-corr", rolReporte: "correctivo", titulo: "Stock bajo de pasta térmica", descripcion: "Solo quedan 3 aplicaciones de pasta térmica", laboratorio: "Lab 1", ubicacion: "Almacén ITIC", categoria: "Insumos", prioridad: "Alta", fecha: "15/04/2026", estado: "Resuelto" },
 ];
 
 const INVENTARIO_SEED: InventarioItem[] = [
@@ -297,6 +316,12 @@ const STOCK_MIN_SEED: StockMinimo[] = [
   { categoria: "Cortapicos", minimo: 2 },
   { categoria: "Otro", minimo: 0 },
 ];
+
+const EDIFICIO_MAP: Record<string, string> = {
+  "Edificio Principal": "PPAL",
+  "Edificio LASIN": "LASIN",
+  "Monoblock Central": "MONOBLOCK",
+};
 
 const state: State = {
   labs: [...L0],
@@ -379,14 +404,14 @@ export const store = {
   // Labs
   addLab: async (l: Laboratorio) => {
     await apiClient.post("/laboratorios", {
-      id: l.id, nombre: l.nombre, edificioId: l.edificio, piso: l.piso,
+      id: l.id, nombre: l.nombre, edificioId: EDIFICIO_MAP[l.edificio] || l.edificio, piso: l.piso,
       capacidadEquipos: l.capEquipos, capacidadPersonas: l.capPersonas,
     });
     state.labs = [...state.labs, l]; log("", "Laboratorio creado", l.nombre); notify();
   },
   updateLab: async (id: string, patch: Partial<Laboratorio>) => {
     await apiClient.patch(`/laboratorios/${id}`, {
-      nombre: patch.nombre, edificioId: patch.edificio, piso: patch.piso,
+      nombre: patch.nombre, edificioId: EDIFICIO_MAP[patch.edificio || ""] || patch.edificio, piso: patch.piso,
       capacidadEquipos: patch.capEquipos, capacidadPersonas: patch.capPersonas,
     });
     state.labs = state.labs.map((l) => l.id === id ? { ...l, ...patch } : l);
@@ -426,6 +451,40 @@ export const store = {
     await apiClient.delete(`/equipos/${codigo}`);
     state.equipos = state.equipos.filter((e) => e.codigo !== codigo); log("", "Equipo eliminado", codigo); notify();
   },
+  decommissionEquipo: async (codigo: string, motivo: string) => {
+    await apiClient.post(`/equipos/${codigo}/decommission`, { motivo });
+    state.equipos = state.equipos.map((e) => e.codigo === codigo ? { ...e, estado: "De baja" } : e);
+    state.perifericos = state.perifericos.map((p) =>
+      p.asignadoA === codigo ? { ...p, estado: "De baja", asignadoA: "" } : p,
+    );
+    state.inventario = state.inventario.map((it) =>
+      (it as any).asignadoEquipo === codigo
+        ? { ...it, estado: "De baja" as InventarioEstado, laboratorio: undefined, asignadoEquipo: undefined }
+        : it,
+    );
+    log("", "Equipo dado de baja", codigo); notify();
+  },
+  replaceEquipo: async (codigoViejo: string, nuevoEquipo: any, motivo?: string) => {
+    const res = await apiClient.post(`/equipos/${codigoViejo}/replace`, {
+      ...nuevoEquipo, motivoBaja: motivo, reasignarPerifericos: true,
+    });
+    const { newEquipo } = res.data;
+    state.equipos = state.equipos.map((e) => e.codigo === codigoViejo ? { ...e, estado: "De baja" } : e);
+    state.equipos = [...state.equipos, {
+      codigo: newEquipo.codigo, nombre: newEquipo.nombre, lab: newEquipo.laboratorioId,
+      fila: newEquipo.fila || "", puesto: newEquipo.puesto || "",
+      so: newEquipo.sistemaOperativo || "", marca: newEquipo.marca || "",
+      modelo: newEquipo.modelo || "", serie: newEquipo.numeroSerie || "",
+      estado: newEquipo.estado?.nombre || newEquipo.estadoId || "Funcionando",
+    }];
+    state.inventario = state.inventario.map((it) =>
+      (it as any).asignadoEquipo === codigoViejo
+        ? { ...it, estado: "De baja" as InventarioEstado, laboratorio: undefined, asignadoEquipo: undefined }
+        : it,
+    );
+    log("", "Equipo reemplazado", `${codigoViejo} → ${nuevoEquipo.codigo}`); notify();
+    return res.data;
+  },
   // Usuarios
   addUsuario: async (u: Usuario) => {
     // POST /auth/register expects personaId + roleId + password — the view handles creation via auth.addAccount
@@ -445,9 +504,11 @@ export const store = {
   },
   // Mantenimientos (preventivo / correctivo)
   addMantPrev: async (m: MantPrev, detalle?: Partial<MantDetalle>) => {
+    const ses = auth.getSession();
     const res = await apiClient.post("/mantenimientos", {
-      tipoId: "preventivo", equipoCodigo: m.codigo, tecnicoId: "u-prev",
-      fecha: m.fecha, estadoId: m.estado?.toLowerCase().replace(/\s+/g, "_") || "programado",
+      tipoId: "preventivo", equipoCodigo: m.codigo, tecnicoId: ses?.id || "u-prev",
+      fecha: m.fecha, horaInicio: m.inicio, horaFin: m.fin,
+      estadoId: m.estado?.toLowerCase().replace(/\s+/g, "_") || "programado",
     });
     const mantId = res.data?.id || `MP-${Date.now()}`;
     if (detalle) {
@@ -481,8 +542,9 @@ export const store = {
     notify();
   },
   addCorrectivo: async (h: HistCorrectivo, equipoCodigo: string, nuevoEstado: string, detalle?: Partial<MantDetalle>) => {
+    const ses = auth.getSession();
     const res = await apiClient.post("/mantenimientos", {
-      tipoId: "correctivo", equipoCodigo, tecnicoId: "u-corr",
+      tipoId: "correctivo", equipoCodigo, tecnicoId: ses?.id || "u-corr",
       fecha: h.fecha, estadoId: "en_proceso",
     });
     const mantId = res.data?.id || `MC-${Date.now()}`;
@@ -531,9 +593,17 @@ export const store = {
   },
   // Perifericos
   addPeriferico: async (p: Periferico) => {
+    const eq = state.equipos.find((e) => e.codigo === p.asignadoA);
+    const lab = !eq ? state.labs.find((l) => l.id === p.asignadoA || l.nombre === p.asignadoA) : undefined;
     await apiClient.post("/perifericos", {
       id: p.id, tipo: p.tipo, marca: p.marca, modelo: p.modelo,
-      numeroSerie: p.serie, equipoCodigo: p.asignadoA || undefined, estado: p.estado,
+      numeroSerie: p.serie,
+      codigoItic: p.codigoItic || undefined,
+      codigoFacultativo: p.codigoFacultativo || undefined,
+      codigoUmsa: p.codigoUmsa || undefined,
+      equipoCodigo: eq?.codigo || undefined,
+      laboratorioId: lab?.id || undefined,
+      estado: p.estado,
     });
     state.perifericos = [...state.perifericos, p]; log("", "Periférico registrado", p.id); notify();
   },
@@ -547,7 +617,15 @@ export const store = {
     if (patch.marca !== undefined) body.marca = patch.marca;
     if (patch.modelo !== undefined) body.modelo = patch.modelo;
     if (patch.serie !== undefined) body.numeroSerie = patch.serie;
-    if (patch.asignadoA !== undefined) body.equipoCodigo = patch.asignadoA;
+    if (patch.codigoItic !== undefined) body.codigoItic = patch.codigoItic;
+    if (patch.codigoFacultativo !== undefined) body.codigoFacultativo = patch.codigoFacultativo;
+    if (patch.codigoUmsa !== undefined) body.codigoUmsa = patch.codigoUmsa;
+    if (patch.asignadoA !== undefined) {
+      const eq = state.equipos.find((e) => e.codigo === patch.asignadoA);
+      const lab = !eq ? state.labs.find((l) => l.id === patch.asignadoA || l.nombre === patch.asignadoA) : undefined;
+      body.equipoCodigo = eq?.codigo || undefined;
+      body.laboratorioId = lab?.id || undefined;
+    }
     if (patch.estado !== undefined) body.estado = patch.estado;
     await apiClient.patch(`/perifericos/${id}`, body);
     state.perifericos = state.perifericos.map((p) => p.id === id ? { ...p, ...patch } : p);
@@ -561,12 +639,32 @@ export const store = {
   },
   // Asignaciones
   addAsignacion: async (a: Asignacion) => {
-    await apiClient.post("/asignaciones", {
-      equipoCodigo: a.equipo, laboratorioId: a.lab, tecnicoId: a.asignadoA,
-      problema: a.problema, prioridad: a.prioridad,
-    });
-    state.asignaciones = [a, ...state.asignaciones];
-    log("", "Equipo asignado", `${a.equipo} → @${a.asignadoA}`);
+    const lab = state.labs.find((l) =>
+      l.id === a.lab || l.nombre === a.lab || l.nombre.startsWith(a.lab),
+    ) || state.labs[0];
+    const labId = lab?.id || a.lab;
+    // Resolve equipo: first by exact code, then first in the resolved lab
+    let equipoCodigo = a.equipo;
+    const eqExact = state.equipos.find((e) => e.codigo === equipoCodigo);
+    if (!eqExact) {
+      const firstInLab = state.equipos.find((e) => e.lab === labId);
+      if (firstInLab) equipoCodigo = firstInLab.codigo;
+    }
+    // Resolve tecnico: try accounts (email prefix, id, registro), then usuarios
+    const accounts = auth.getAccounts();
+    let tecnicoId = a.asignadoA;
+    const user = accounts.find((acc) =>
+      acc.email?.startsWith(a.asignadoA) || acc.id === a.asignadoA || acc.registro === a.asignadoA,
+    ) || state.usuarios.find((u: any) => u.username === a.asignadoA);
+    if (user) {
+      tecnicoId = "id" in user ? (user as any).id : user.username;
+    }
+    const body = { equipoCodigo, laboratorioId: labId, tecnicoId, problema: a.problema, prioridad: a.prioridad };
+    console.log("[DEBUG addAsignacion] body:", body, "| accounts:", accounts.length, "| equipos:", state.equipos.length);
+    await apiClient.post("/asignaciones", body);
+    const synced: Asignacion = { ...a, asignadoA: tecnicoId, equipo: equipoCodigo, lab: labId };
+    state.asignaciones = [synced, ...state.asignaciones];
+    log("", "Equipo asignado", `${equipoCodigo} → @${a.asignadoA}`);
     notify();
   },
   updateAsignacion: async (id: string, patch: Partial<Asignacion>) => {
@@ -574,25 +672,23 @@ export const store = {
     if (patch.estado !== undefined) body.estado = patch.estado;
     if (patch.prioridad !== undefined) body.prioridad = patch.prioridad;
     if (patch.problema !== undefined) body.problema = patch.problema;
+    if (patch.resolucionDetalle !== undefined) body.resolucionDetalle = patch.resolucionDetalle;
     await apiClient.patch(`/asignaciones/${id}`, body);
     state.asignaciones = state.asignaciones.map((a) => a.id === id ? { ...a, ...patch } : a);
     notify();
   },
   // Reportes de pasante → encargado
   addReportePasante: async (r: ReportePasante) => {
-    // optimistic update: mostrar en UI inmediatamente
+    const lab = state.labs.find((l) => l.nombre === r.laboratorio);
+    await apiClient.post("/reportes", {
+      pasanteId: r.pasanteId || "u-prev",
+      titulo: r.titulo, descripcion: r.descripcion,
+      laboratorioId: lab?.id, ubicacion: r.ubicacion || undefined, categoria: r.categoria,
+      prioridad: r.prioridad, rolReporte: r.rolReporte,
+    });
     state.reportesPasante = [r, ...state.reportesPasante];
     log(r.pasante, "Reporte enviado", r.titulo);
     notify();
-    try {
-      const lab = state.labs.find((l) => l.nombre === r.laboratorio);
-      await apiClient.post("/reportes", {
-        pasanteId: r.pasanteId || "u-prev",
-        titulo: r.titulo, descripcion: r.descripcion,
-        laboratorioId: lab?.id || r.laboratorio, ubicacion: r.ubicacion, categoria: r.categoria,
-        prioridad: r.prioridad, rolReporte: r.rolReporte,
-      });
-    } catch (e) { console.error("POST /reportes falló:", e, r); }
   },
   updateReportePasante: async (id: string, patch: Partial<ReportePasante>) => {
     const body: any = {};
@@ -600,6 +696,16 @@ export const store = {
     if (patch.resolucionDetalle !== undefined) body.resolucionDetalle = patch.resolucionDetalle;
     await apiClient.patch(`/reportes/${id}`, body);
     state.reportesPasante = state.reportesPasante.map((r) => r.id === id ? { ...r, ...patch } : r);
+    notify();
+  },
+  pushMantenimiento: (entry: { equipo: string; lab: string; tecnico: string; tipo: string; fecha: string; estado: string }) => {
+    state.mantenimientos = [entry, ...state.mantenimientos].slice(0, 50);
+    notify();
+  },
+  updateMantenimientoEstado: (equipo: string, lab: string, fecha: string, estado: string) => {
+    state.mantenimientos = state.mantenimientos.map((m) =>
+      m.equipo === equipo && m.lab === lab && m.fecha === fecha ? { ...m, estado } : m
+    );
     notify();
   },
   // Inventario
@@ -677,6 +783,16 @@ export const correctivoPrefill = {
   set: (p: CorrectivoPrefill | null) => { _prefill = p; prefillListeners.forEach((fn) => fn()); },
   consume: () => { const p = _prefill; _prefill = null; prefillListeners.forEach((fn) => fn()); return p; },
   subscribe: (fn: () => void) => { prefillListeners.add(fn); return () => prefillListeners.delete(fn); },
+};
+
+// --------- Prefill para Nuevo Mantenimiento Preventivo ---------
+let _prefillPrev: PreventivoPrefill | null = null;
+const prefillPrevListeners = new Set<() => void>();
+export const preventivoPrefill = {
+  get: () => _prefillPrev,
+  set: (p: PreventivoPrefill | null) => { _prefillPrev = p; prefillPrevListeners.forEach((fn) => fn()); },
+  consume: () => { const p = _prefillPrev; _prefillPrev = null; prefillPrevListeners.forEach((fn) => fn()); return p; },
+  subscribe: (fn: () => void) => { prefillPrevListeners.add(fn); return () => prefillPrevListeners.delete(fn); },
 };
 
 // ─── API initialization ─────────────────────────────────────────────
@@ -821,7 +937,10 @@ export async function initFromApi() {
         id: p.id, tipo: p.tipo,
         marca: p.marca || "", modelo: p.modelo || "",
         serie: p.numeroSerie || "",
-        asignadoA: p.equipoCodigo || "",
+        codigoItic: p.codigoItic || undefined,
+        codigoFacultativo: p.codigoFacultativo || undefined,
+        codigoUmsa: p.codigoUmsa || undefined,
+        asignadoA: p.equipoCodigo || p.laboratorioId || "",
         estado: p.estado,
       }));
     }
@@ -849,6 +968,8 @@ export async function initFromApi() {
         email: u.email || undefined,
         registro: u.registro || undefined,
         celular: u.celular || undefined,
+        fechaIngreso: u.fechaIngreso || undefined,
+        createdAt: u.createdAt || undefined,
       })));
     }
     if (invRes.status === "fulfilled" && invRes.value.data?.length) {
@@ -879,16 +1000,21 @@ export async function initFromApi() {
       if (cats.length > 0) state.stockMinimos = cats;
     }
     if (asigRes.status === "fulfilled" && asigRes.value.data?.length) {
-      state.asignaciones = asigRes.value.data.map((a: any) => ({
-        id: a.id,
-        equipo: a.equipo?.codigo || a.equipoCodigo,
-        lab: a.laboratorios?.nombre || a.laboratorioId,
-        asignadoA: a.tecnico?.id || a.tecnicoId,
-        problema: a.problema,
-        prioridad: a.prioridad,
-        fecha: new Date(a.fecha).toLocaleDateString("es-BO"),
-        estado: a.estado,
-      }));
+      const curMap = new Map(state.asignaciones.map((x) => [x.id, x]));
+      state.asignaciones = asigRes.value.data.map((a: any) => {
+        const cur = curMap.get(a.id);
+        return {
+          id: a.id,
+          equipo: a.equipo?.codigo || a.equipoCodigo,
+          lab: a.laboratorios?.nombre || a.laboratorioId,
+          asignadoA: a.tecnico?.id || a.tecnicoId,
+          problema: a.problema,
+          prioridad: a.prioridad,
+          fecha: new Date(a.fecha).toLocaleDateString("es-BO"),
+          estado: a.estado,
+          reporteId: a.reporteId || cur?.reporteId || undefined,
+        };
+      });
     }
     if (reportRes.status === "fulfilled" && reportRes.value.data) {
       state.reportesPasante = reportRes.value.data.map((r: any) => ({
@@ -918,11 +1044,35 @@ export async function initFromApi() {
         equipo: l.equipoCodigo || undefined,
         tipoAccion: l.tipoAccion || undefined,
         estado: l.estado || "Éxito",
+        ipOrigen: l.ipOrigen || undefined,
       }));
     }
     notify();
   } catch {
     // Fallback silently to seed data
+  }
+}
+
+export async function fetchLogs() {
+  try {
+    const res = await apiClient.get("/logs");
+    if (res.data?.length) {
+      state.logs = res.data.map((l: any) => ({
+        ts: new Date(l.timestamp).toLocaleString("es-BO"),
+        usuario: l.usuario?.persona?.nombres + " " + (l.usuario?.persona?.paterno || "") || l.usuarioId || "",
+        accion: l.accion,
+        detalle: l.detalle || "",
+        modulo: l.modulo || undefined,
+        entidad: l.entidad || undefined,
+        equipo: l.equipoCodigo || undefined,
+        tipoAccion: l.tipoAccion || undefined,
+        estado: l.estado || "Éxito",
+        ipOrigen: l.ipOrigen || undefined,
+      }));
+      notify();
+    }
+  } catch {
+    // keep existing logs
   }
 }
 

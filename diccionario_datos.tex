@@ -1,0 +1,969 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\definecolor{navy}{HTML}{1B2A4A}
+\definecolor{teal}{HTML}{0D9488}
+
+% --- Comando para ficha de tabla ---
+\newenvironment{tabladesc}[3]{%
+  \section{#1}
+  \textbf{Nombre físico:} \texttt{#2} \hfill \textbf{Tipo:} #3\par
+  \medskip
+}{%
+  \bigskip
+}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{4cm}
+{\Huge\color{navy}\textbf{Diccionario de Datos}}\\[0.8cm]
+{\Large Sistema de Gestión de Laboratorios --- SIGMALAB}\\[0.4cm]
+{\large Universidad Mayor de San Andrés}\\[2cm]
+\vfill
+{\small Generado desde \texttt{schema.prisma} --- \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+%============================================================
+\section{Introducción}
+%============================================================
+
+Este documento describe la estructura completa de la base de datos del sistema SIGMALAB.
+Se definen 24 tablas que cubren los módulos de: inventario de equipos, periféricos,
+mantenimientos (preventivo y correctivo), incidencias, reportes de pasantes,
+asignaciones, usuarios, roles, auditoría y trazabilidad.
+
+Convenciones utilizadas:
+\begin{itemize}[nosep]
+  \item \texttt{PK} --- Clave primaria.
+  \item \texttt{FK} --- Clave foránea.
+  \item \texttt{UQ} --- Restricción de unicidad.
+  \item \texttt{NN} --- No nulo (\texttt{NOT NULL}).
+  \item \texttt{DF} --- Valor por defecto.
+\end{itemize}
+
+\newpage
+
+%============================================================
+% TABLA 1
+%============================================================
+\begin{tabladesc}{Edificio}{edificios}{Maestra}
+
+Catalogación de edificios que albergan los laboratorios.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}       & VARCHAR(10)  & PK, NN & Identificador único del edificio (ej. \texttt{ED-001}). \\
+\texttt{nombre}   & VARCHAR(100) & NN     & Nombre completo del edificio. \\
+\texttt{ubicacion} & VARCHAR(200)& ---    & Dirección o referencia de ubicación. \\
+\texttt{activo}   & BOOLEAN      & DF: true & Indica si el registro está activo. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Laboratorio} (\texttt{laboratorios}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 2
+%============================================================
+\begin{tabladesc}{Rol}{roles}{Maestra}
+
+Catálogo de roles del sistema para control de acceso.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}         & VARCHAR(20)  & PK, NN & Identificador del rol (ej. \texttt{encargado}). \\
+\texttt{nombre}     & VARCHAR(50)  & UQ, NN & Nombre legible del rol. \\
+\texttt{descripcion}& VARCHAR(200) & ---    & Descripción del alcance del rol. \\
+\texttt{nivelAcceso}& SMALLINT     & NN     & Nivel jerárquico (mayor valor = más privilegios). \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Usuario} (\texttt{usuarios}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 3
+%============================================================
+\begin{tabladesc}{Categoría de Inventario}{categorias\_inventario}{Maestra}
+
+Categorías para clasificar los ítems de inventario (consumibles, repuestos, etc.).
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}        & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{nombre}    & VARCHAR(100) & UQ, NN & Nombre de la categoría. \\
+\texttt{stockMinimo}& INT         & DF: 0  & Umbral mínimo de stock para alertas. \\
+\texttt{activo}    & BOOLEAN      & DF: true & Indica si la categoría está vigente. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{InventarioItem} (\texttt{inventario}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 4
+%============================================================
+\begin{tabladesc}{Tipo de Mantenimiento}{tipo\_mantenimiento}{Maestra}
+
+Clasificación del tipo de mantenimiento (preventivo, correctivo, predictivo).
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}     & VARCHAR(20) & PK, NN & Identificador del tipo. \\
+\texttt{nombre} & VARCHAR(50) & UQ, NN & Nombre del tipo de mantenimiento. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Mantenimiento} (\texttt{mantenimientos}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 5
+%============================================================
+\begin{tabladesc}{Estado de Mantenimiento}{estado\_mantenimiento}{Maestra}
+
+Estados posibles del flujo de un mantenimiento.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}     & VARCHAR(20) & PK, NN & Identificador del estado. \\
+\texttt{nombre} & VARCHAR(50) & UQ, NN & Nombre del estado. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Mantenimiento} (\texttt{mantenimientos}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 6
+%============================================================
+\begin{tabladesc}{Estado de Equipo}{estado\_equipo}{Maestra}
+
+Catálogo de estados operativos de un equipo (Operativo, En mantenimiento, De baja, etc.).
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}     & VARCHAR(30) & PK, NN & Identificador del estado. \\
+\texttt{nombre} & VARCHAR(50) & UQ, NN & Nombre del estado. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Equipo} (\texttt{equipos}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 7
+%============================================================
+\begin{tabladesc}{Estado de Incidencia}{estado\_incidencia}{Maestra}
+
+Estados del ciclo de vida de una incidencia (Nuevo, En proceso, Resuelto, etc.).
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2cm} L{1.8cm} L{8cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}     & VARCHAR(20) & PK, NN & Identificador del estado. \\
+\texttt{nombre} & VARCHAR(50) & UQ, NN & Nombre del estado. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{Incidencia} (\texttt{incidencias}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 8
+%============================================================
+\begin{tabladesc}{Persona}{personas}{Maestra}
+
+Datos personales de individuos vinculados al sistema (docentes, estudiantes, técnicos, encargados).
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}                & VARCHAR(20)  & PK, NN & Identificador único. \\
+\texttt{nombres}           & VARCHAR(100) & NN     & Nombres de la persona. \\
+\texttt{paterno}           & VARCHAR(50)  & NN     & Apellido paterno. \\
+\texttt{materno}           & VARCHAR(50)  & ---    & Apellido materno. \\
+\texttt{ci}                & VARCHAR(20)  & UQ     & Cédula de identidad. \\
+\texttt{direccion}         & VARCHAR(255) & ---    & Dirección de domicilio. \\
+\texttt{registroUniversitario} & VARCHAR(20) & UQ  & Registro universitario (RU). \\
+\texttt{email}             & VARCHAR(150) & UQ     & Correo electrónico. \\
+\texttt{celular}           & VARCHAR(20)  & ---    & Número de teléfono celular. \\
+\texttt{fotoUrl}           & TEXT         & ---    & URL de la foto de perfil. \\
+\texttt{fechaIngresoPasante}& DATE        & ---    & Fecha de ingreso del pasante. \\
+\texttt{activo}            & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}         & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}         & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\leftrightarrow$ 1 con \texttt{Usuario} (\texttt{usuario}) — Cascade en delete.
+  \item 1 $\rightarrow$ N con \texttt{Laboratorio} (\texttt{laboratorios}) como encargado.
+  \item 1 $\rightarrow$ N con \texttt{Incidencia} (\texttt{incidencias}) como persona reportante.
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 9
+%============================================================
+\begin{tabladesc}{Usuario}{usuarios}{Maestra / Operacional}
+
+Cuentas de acceso al sistema. Cada usuario tiene una persona asociada.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(20)  & PK, NN & Identificador único (username). \\
+\texttt{personaId}   & VARCHAR(20)  & FK, UQ, NN & Referencia a \texttt{Persona.id}. \\
+\texttt{roleId}      & VARCHAR(20)  & FK, NN & Referencia a \texttt{Rol.id}. \\
+\texttt{passwordHash}& VARCHAR(255) & NN     & Hash bcrypt de la contraseña. \\
+\texttt{ultimoAcceso}& TIMESTAMP    & ---    & Último inicio de sesión. \\
+\texttt{activo}      & BOOLEAN      & DF: true & Cuenta habilitada. \\
+\texttt{createdAt}   & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}   & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\leftrightarrow$ 1 con \texttt{Persona} (\texttt{persona}).
+  \item N $\rightarrow$ 1 con \texttt{Rol} (\texttt{rol}).
+  \item 1 $\rightarrow$ N con \texttt{Asignacion} (\texttt{asignaciones}).
+  \item 1 $\rightarrow$ N con \texttt{Incidencia} (\texttt{incidencias}).
+  \item 1 $\rightarrow$ N con \texttt{Log} (\texttt{logs}).
+  \item 1 $\rightarrow$ N con \texttt{AuditChange} (\texttt{auditChanges}).
+  \item 1 $\rightarrow$ N con \texttt{Mantenimiento} (\texttt{mantenimientos}).
+  \item 1 $\rightarrow$ N con \texttt{ReportePasante} como atendido por (\texttt{reportesAtendidos}).
+  \item 1 $\rightarrow$ N con \texttt{ReportePasante} como pasante (\texttt{reportesPasante}).
+  \item 1 $\rightarrow$ N con \texttt{PasanteHistorial} (\texttt{pasanteHistorial}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 10
+%============================================================
+\begin{tabladesc}{Historial de Pasante}{pasante\_historial}{Histórica}
+
+Registro de cambios en la fecha de ingreso de un pasante.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30) & PK, NN & Identificador único. \\
+\texttt{usuarioId}   & VARCHAR(20) & FK, NN & Referencia a \texttt{Usuario.id}. \\
+\texttt{fechaIngreso}& DATE        & NN     & Nueva fecha de ingreso registrada. \\
+\texttt{fechaCambio} & TIMESTAMP   & NN, DF: now & Momento del cambio. \\
+\texttt{modificadoPor}& VARCHAR(20)& ---    & ID del usuario que realizó el cambio. \\
+\texttt{motivo}      & VARCHAR(200)& ---    & Razón del cambio. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{usuario}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 11
+%============================================================
+\begin{tabladesc}{Laboratorio}{laboratorios}{Maestra / Operacional}
+
+Espacios físicos (laboratorios) donde se ubican los equipos.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}              & VARCHAR(20)  & PK, NN & Identificador único (ej. \texttt{LAB-001}). \\
+\texttt{nombre}          & VARCHAR(100) & NN     & Nombre del laboratorio. \\
+\texttt{edificioId}      & VARCHAR(10)  & FK, NN & Referencia a \texttt{Edificio.id}. \\
+\texttt{piso}            & SMALLINT     & NN     & Número de piso. \\
+\texttt{capacidadEquipos}& INT          & NN     & Cantidad máxima de equipos. \\
+\texttt{capacidadPersonas}& INT         & NN     & Capacidad de personas. \\
+\texttt{encargadoId}     & VARCHAR(20)  & FK     & Referencia a \texttt{Persona.id} (encargado). \\
+\texttt{activo}          & BOOLEAN      & DF: true & Laboratorio habilitado. \\
+\texttt{createdAt}       & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}       & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Edificio} (\texttt{edificio}).
+  \item N $\rightarrow$ 1 con \texttt{Persona} (\texttt{encargado}).
+  \item 1 $\rightarrow$ N con \texttt{Equipo} (\texttt{equipos}).
+  \item 1 $\rightarrow$ N con \texttt{Periferico} (\texttt{perifericos}).
+  \item 1 $\rightarrow$ N con \texttt{InventarioItem} (\texttt{inventario}).
+  \item 1 $\rightarrow$ N con \texttt{Incidencia} (\texttt{incidencias}).
+  \item 1 $\rightarrow$ N con \texttt{Mantenimiento} (\texttt{mantenimientos}).
+  \item 1 $\rightarrow$ N con \texttt{Asignacion} (\texttt{asignaciones}).
+  \item 1 $\rightarrow$ N con \texttt{ReportePasante} (\texttt{reportesPasante}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 12
+%============================================================
+\begin{tabladesc}{Equipo}{equipos}{Maestra / Operacional}
+
+Equipos de cómputo instalados en los laboratorios.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{codigo}          & VARCHAR(30)  & PK, NN & Código único del equipo (ej. \texttt{EQ-001}). \\
+\texttt{nombre}          & VARCHAR(150) & NN     & Nombre o descripción del equipo. \\
+\texttt{laboratorioId}   & VARCHAR(20)  & FK, NN & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{fila}            & VARCHAR(5)   & ---    & Fila dentro del laboratorio. \\
+\texttt{puesto}          & VARCHAR(5)   & ---    & Número de puesto. \\
+\texttt{sistemaOperativo}& VARCHAR(100) & ---    & SO instalado. \\
+\texttt{marca}           & VARCHAR(50)  & ---    & Marca del equipo. \\
+\texttt{modelo}          & VARCHAR(100) & ---    & Modelo del equipo. \\
+\texttt{numeroSerie}     & VARCHAR(100) & UQ     & Número de serie del fabricante. \\
+\texttt{codigoItic}      & VARCHAR(50)  & UQ     & Código de inventario ITIC. \\
+\texttt{codigoFacultativo}& VARCHAR(50) & ---    & Código de inventario facultativo. \\
+\texttt{codigoUmsa}      & VARCHAR(50)  & ---    & Código de inventario UMSA. \\
+\texttt{estadoId}        & VARCHAR(30)  & FK, NN & Referencia a \texttt{EstadoEquipo.id}. \\
+\texttt{fechaCompra}     & DATE         & ---    & Fecha de adquisición. \\
+\texttt{fechaBaja}       & DATE         & ---    & Fecha de baja del equipo. \\
+\texttt{motivoBaja}      & TEXT         & ---    & Razón de la baja. \\
+\texttt{reemplazadoPor}  & VARCHAR(30)  & ---    & Código del equipo que lo reemplazó. \\
+\texttt{activo}          & BOOLEAN      & DF: true & Equipo habilitado. \\
+\texttt{createdAt}       & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}       & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\midrule
+\multicolumn{4}{l}{\small\textit{Restricción única compuesta:}} \\
+\multicolumn{4}{l}{\small\texttt{UQ(laboratorioId, fila, puesto)}} \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{EstadoEquipo} (\texttt{estado}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+  \item 1 $\rightarrow$ N con \texttt{Asignacion} (\texttt{asignaciones}).
+  \item 1 $\rightarrow$ N con \texttt{Incidencia} (\texttt{incidencias}).
+  \item 1 $\rightarrow$ N con \texttt{InventarioItem} (\texttt{inventarioItems}).
+  \item 1 $\rightarrow$ N con \texttt{Mantenimiento} (\texttt{mantenimientos}).
+  \item 1 $\rightarrow$ N con \texttt{Periferico} (\texttt{perifericos}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 13
+%============================================================
+\begin{tabladesc}{Periférico}{perifericos}{Operacional}
+
+Dispositivos periféricos (monitores, teclados, mouse, etc.) asociados a equipos o laboratorios.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}              & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{tipo}            & VARCHAR(50)  & NN     & Tipo de periférico (Monitor, Teclado, etc.). \\
+\texttt{marca}           & VARCHAR(50)  & ---    & Marca del periférico. \\
+\texttt{modelo}          & VARCHAR(100) & ---    & Modelo del periférico. \\
+\texttt{numeroSerie}     & VARCHAR(100) & ---    & Número de serie. \\
+\texttt{codigoItic}      & VARCHAR(50)  & UQ     & Código de inventario ITIC. \\
+\texttt{codigoFacultativo}& VARCHAR(50) & ---    & Código de inventario facultativo. \\
+\texttt{codigoUmsa}      & VARCHAR(50)  & ---    & Código de inventario UMSA. \\
+\texttt{laboratorioId}   & VARCHAR(20)  & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{equipoCodigo}    & VARCHAR(30)  & FK     & Referencia a \texttt{Equipo.codigo}. \\
+\texttt{estado}          & VARCHAR(30)  & NN, DF: 'Funcionando' & Estado operativo. \\
+\texttt{activo}          & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}       & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Equipo} (\texttt{equipo}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 14
+%============================================================
+\begin{tabladesc}{Ítem de Inventario}{inventario}{Operacional}
+
+Control de inventario de consumibles, repuestos y materiales.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}              & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{categoriaId}     & VARCHAR(30)  & FK, NN & Referencia a \texttt{CategoriaInventario.id}. \\
+\texttt{codigoItic}      & VARCHAR(50)  & UQ, NN & Código de inventario ITIC. \\
+\texttt{codigoFacultativo}& VARCHAR(50) & ---    & Código de inventario facultativo. \\
+\texttt{codigoUmsa}      & VARCHAR(50)  & ---    & Código de inventario UMSA. \\
+\texttt{numeroSerie}     & VARCHAR(100) & ---    & Número de serie. \\
+\texttt{marca}           & VARCHAR(50)  & ---    & Marca del ítem. \\
+\texttt{modelo}          & VARCHAR(100) & ---    & Modelo del ítem. \\
+\texttt{estado}          & VARCHAR(30)  & NN, DF: 'En almacén' & Estado actual. \\
+\texttt{fechaIngreso}    & DATE         & NN     & Fecha de ingreso al inventario. \\
+\texttt{fechaAsignacion} & DATE         & ---    & Fecha de asignación a un equipo/lab. \\
+\texttt{laboratorioId}   & VARCHAR(20)  & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{equipoCodigo}    & VARCHAR(30)  & FK     & Referencia a \texttt{Equipo.codigo}. \\
+\texttt{observaciones}   & TEXT         & ---    & Notas adicionales. \\
+\texttt{activo}          & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}       & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{CategoriaInventario} (\texttt{categoria}).
+  \item N $\rightarrow$ 1 con \texttt{Equipo} (\texttt{equipo}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 15
+%============================================================
+\begin{tabladesc}{Insumo}{insumos}{Maestra / Operacional}
+
+Catálogo de insumos utilizados en mantenimientos.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{nombre}     & VARCHAR(100) & PK, NN & Nombre del insumo. \\
+\texttt{tipo}       & VARCHAR(50)  & ---    & Clasificación del insumo. \\
+\texttt{unidadMedida}& VARCHAR(30) & NN     & Unidad de medida (ej. \texttt{unidad}, \texttt{ml}). \\
+\texttt{stock}      & INT          & DF: 0  & Cantidad disponible. \\
+\texttt{stockMinimo}& INT          & DF: 0  & Umbral mínimo de stock. \\
+\texttt{activo}     & BOOLEAN      & DF: true & Insumo habilitado. \\
+\texttt{createdAt}  & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}  & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\rightarrow$ N con \texttt{InsumoUsado} (\texttt{insumosUsados}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 16
+%============================================================
+\begin{tabladesc}{Mantenimiento}{mantenimientos}{Operacional}
+
+Registro de mantenimientos realizados a equipos.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{tipoId}      & VARCHAR(20)  & FK, NN & Referencia a \texttt{TipoMantenimiento.id}. \\
+\texttt{equipoCodigo}& VARCHAR(30)  & FK, NN & Referencia a \texttt{Equipo.codigo}. \\
+\texttt{tecnicoId}   & VARCHAR(20)  & FK, NN & Referencia a \texttt{Usuario.id}. \\
+\texttt{laboratorioId}& VARCHAR(20) & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{fecha}       & DATE         & NN     & Fecha del mantenimiento. \\
+\texttt{horaInicio}  & TIME         & ---    & Hora de inicio. \\
+\texttt{horaFin}     & TIME         & ---    & Hora de finalización. \\
+\texttt{estadoId}    & VARCHAR(20)  & FK, NN & Referencia a \texttt{EstadoMantenimiento.id}. \\
+\texttt{activo}      & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}   & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}   & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{TipoMantenimiento} (\texttt{tipo}).
+  \item N $\rightarrow$ 1 con \texttt{EstadoMantenimiento} (\texttt{estado}).
+  \item N $\rightarrow$ 1 con \texttt{Equipo} (\texttt{equipo}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{tecnico}).
+  \item 1 $\leftrightarrow$ 1 con \texttt{MantenimientoDetalle} (\texttt{detalle}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 17
+%============================================================
+\begin{tabladesc}{Detalle de Mantenimiento}{mantenimientos\_detalle}{Operacional}
+
+Información detallada del diagnóstico, acciones y resoluciones de un mantenimiento.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}             & VARCHAR(30) & PK, NN & Identificador único. \\
+\texttt{mantenimientoId}& VARCHAR(30) & FK, UQ, NN & Referencia a \texttt{Mantenimiento.id}. \\
+\texttt{descripcion}    & TEXT        & ---    & Descripción general. \\
+\texttt{diagnostico}    & TEXT        & ---    & Diagnóstico del problema. \\
+\texttt{accionRealizada}& TEXT        & ---    & Acciones ejecutadas. \\
+\texttt{resolucion}     & TEXT        & ---    & Resolución final. \\
+\texttt{tipoIncidencia} & VARCHAR(50) & ---    & Tipo de incidencia detectada. \\
+\texttt{estadoFinal}    & VARCHAR(50) & ---    & Estado del equipo después del mant. \\
+\texttt{observaciones}  & TEXT        & ---    & Observaciones adicionales. \\
+\texttt{recomendaciones}& TEXT        & ---    & Recomendaciones futuras. \\
+\texttt{activo}         & BOOLEAN     & DF: true & Registro activo. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item 1 $\leftrightarrow$ 1 con \texttt{Mantenimiento} (\texttt{mantenimiento}) — Cascade en delete.
+  \item 1 $\rightarrow$ N con \texttt{Checklist} (\texttt{checklists}) — Cascade en delete.
+  \item 1 $\rightarrow$ N con \texttt{InsumoUsado} (\texttt{insumosUsados}) — Cascade en delete.
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 18
+%============================================================
+\begin{tabladesc}{Checklist}{checklists}{Operacional}
+
+Items de verificación asociados a un mantenimiento.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}        & VARCHAR(30) & PK, NN & Identificador único. \\
+\texttt{detalleId} & VARCHAR(30) & FK, NN & Referencia a \texttt{MantenimientoDetalle.id}. \\
+\texttt{categoria} & VARCHAR(30) & NN     & Categoría del item (ej. \texttt{Hardware}). \\
+\texttt{item}      & VARCHAR(200)& NN     & Descripción del elemento a verificar. \\
+\texttt{estado}    & VARCHAR(20) & NN     & Estado (Bien, Mal, Regular, N/A). \\
+\texttt{observacion}& TEXT       & ---    & Observación del técnico. \\
+\texttt{activo}    & BOOLEAN     & DF: true & Registro activo. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{MantenimientoDetalle} (\texttt{detalle}) — Cascade en delete.
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 19
+%============================================================
+\begin{tabladesc}{Insumo Usado}{insumos\_usados}{Operacional}
+
+Registro de insumos consumidos en un mantenimiento.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{detalleId}   & VARCHAR(30)  & FK, NN & Referencia a \texttt{MantenimientoDetalle.id}. \\
+\texttt{insumoNombre}& VARCHAR(100) & FK, NN & Referencia a \texttt{Insumo.nombre}. \\
+\texttt{cantidad}    & VARCHAR(50)  & NN     & Cantidad utilizada. \\
+\texttt{activo}      & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}   & TIMESTAMP    & NN, DF: now & Fecha de registro. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{MantenimientoDetalle} (\texttt{detalle}) — Cascade en delete.
+  \item N $\rightarrow$ 1 con \texttt{Insumo} (\texttt{insumo}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 20
+%============================================================
+\begin{tabladesc}{Incidencia}{incidencias}{Operacional}
+
+Registro de incidentes reportados sobre equipos y laboratorios.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}                & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{equipoCodigo}      & VARCHAR(30)  & FK     & Referencia a \texttt{Equipo.codigo}. \\
+\texttt{laboratorioId}     & VARCHAR(20)  & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{usuarioId}         & VARCHAR(20)  & FK     & Referencia a \texttt{Usuario.id} (técnico). \\
+\texttt{personaId}         & VARCHAR(20)  & FK     & Referencia a \texttt{Persona.id} (reportante). \\
+\texttt{problema}          & TEXT         & NN     & Descripción del problema. \\
+\texttt{requiereSeguimiento}& BOOLEAN     & DF: false & Indica si requiere seguimiento. \\
+\texttt{estadoId}          & VARCHAR(20)  & FK, NN & Referencia a \texttt{EstadoIncidencia.id}. \\
+\texttt{fecha}             & TIMESTAMP    & NN, DF: now & Fecha del reporte. \\
+\texttt{resueltaEn}        & TIMESTAMP    & ---    & Fecha de resolución. \\
+\texttt{activo}            & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}         & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}         & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{EstadoIncidencia} (\texttt{estado}).
+  \item N $\rightarrow$ 1 con \texttt{Equipo} (\texttt{equipo}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+  \item N $\rightarrow$ 1 con \texttt{Persona} (\texttt{persona}).
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{usuario}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 21
+%============================================================
+\begin{tabladesc}{Asignación}{asignaciones}{Operacional}
+
+Asignación de tareas técnicas a usuarios para atención de problemas.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{equipoCodigo}& VARCHAR(30)  & FK, NN & Referencia a \texttt{Equipo.codigo}. \\
+\texttt{laboratorioId}& VARCHAR(20) & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{tecnicoId}   & VARCHAR(20)  & FK, NN & Referencia a \texttt{Usuario.id}. \\
+\texttt{problema}    & TEXT         & NN     & Descripción del problema asignado. \\
+\texttt{prioridad}   & VARCHAR(10)  & NN, DF: 'Media' & Prioridad (Baja, Media, Alta). \\
+\texttt{fecha}       & DATE         & NN, DF: now & Fecha de asignación. \\
+\texttt{estado}      & VARCHAR(20)  & NN, DF: 'Pendiente' & Estado de la asignación. \\
+\texttt{activo}      & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}   & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}   & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Equipo} (\texttt{equipo}).
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{tecnico}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 22
+%============================================================
+\begin{tabladesc}{Reporte de Pasante}{reportes\_pasante}{Operacional}
+
+Reportes generados por pasantes sobre novedades en laboratorios.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}             & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{pasanteId}      & VARCHAR(20)  & FK, NN & Referencia a \texttt{Usuario.id} (pasante). \\
+\texttt{rolReporte}     & VARCHAR(20)  & ---    & Rol del pasante al reportar. \\
+\texttt{titulo}         & VARCHAR(200) & NN     & Título del reporte. \\
+\texttt{descripcion}    & TEXT         & NN     & Descripción detallada. \\
+\texttt{laboratorioId}  & VARCHAR(20)  & FK     & Referencia a \texttt{Laboratorio.id}. \\
+\texttt{ubicacion}      & VARCHAR(200) & ---    & Ubicación específica. \\
+\texttt{categoria}      & VARCHAR(50)  & ---    & Categoría del reporte. \\
+\texttt{prioridad}      & VARCHAR(10)  & NN, DF: 'Media' & Prioridad. \\
+\texttt{fecha}          & TIMESTAMP    & NN, DF: now & Fecha del reporte. \\
+\texttt{estado}         & VARCHAR(30)  & NN, DF: 'Nuevo' & Estado del reporte. \\
+\texttt{resolucionDetalle}& TEXT       & ---    & Detalle de la resolución. \\
+\texttt{atendidoPor}    & VARCHAR(20)  & FK     & Referencia a \texttt{Usuario.id} (quien atendió). \\
+\texttt{activo}         & BOOLEAN      & DF: true & Registro activo. \\
+\texttt{createdAt}      & TIMESTAMP    & NN, DF: now & Fecha de creación. \\
+\texttt{updatedAt}      & TIMESTAMP    & NN, DF: now & Fecha de última modificación. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{pasante}).
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{atendidoPorUser}) como quien atiende.
+  \item N $\rightarrow$ 1 con \texttt{Laboratorio} (\texttt{laboratorio}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 23
+%============================================================
+\begin{tabladesc}{Log}{logs}{Auditoría}
+
+Registro de eventos y acciones del sistema para trazabilidad.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{timestamp}   & TIMESTAMP    & NN, DF: now & Momento del evento. \\
+\texttt{usuarioId}   & VARCHAR(20)  & FK     & Referencia a \texttt{Usuario.id}. \\
+\texttt{accion}      & VARCHAR(100) & NN     & Acción realizada. \\
+\texttt{detalle}     & TEXT         & ---    & Detalle del evento. \\
+\texttt{modulo}      & VARCHAR(50)  & ---    & Módulo del sistema. \\
+\texttt{entidad}     & VARCHAR(50)  & ---    & Entidad afectada. \\
+\texttt{equipoCodigo}& VARCHAR(30)  & ---    & Código de equipo relacionado. \\
+\texttt{tipoAccion}  & VARCHAR(20)  & ---    & Tipo de acción (Crear, Actualizar, etc.). \\
+\texttt{estado}      & VARCHAR(20)  & NN, DF: 'Éxito' & Resultado del evento. \\
+\texttt{ipOrigen}    & VARCHAR(45)  & ---    & Dirección IP de origen. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{usuario}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+% TABLA 24
+%============================================================
+\begin{tabladesc}{Auditoría de Cambios}{audit\_changes}{Auditoría}
+
+Registro detallado de cambios en campos específicos de las entidades.
+
+\bigskip
+\begin{longtable}{L{3.5cm} L{2.5cm} L{2cm} L{7.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{id}          & VARCHAR(30)  & PK, NN & Identificador único. \\
+\texttt{tabla}       & VARCHAR(50)  & NN     & Nombre de la tabla modificada. \\
+\texttt{operacion}   & VARCHAR(10)  & NN     & Tipo de operación (INSERT, UPDATE, DELETE). \\
+\texttt{registroId}  & VARCHAR(50)  & ---    & Identificador del registro afectado. \\
+\texttt{usuarioId}   & VARCHAR(20)  & FK     & Referencia a \texttt{Usuario.id}. \\
+\texttt{campo}       & VARCHAR(50)  & ---    & Nombre del campo modificado. \\
+\texttt{valorAnterior}& TEXT        & ---    & Valor previo al cambio. \\
+\texttt{valorNuevo}  & TEXT         & ---    & Valor posterior al cambio. \\
+\texttt{timestamp}   & TIMESTAMP    & NN, DF: now & Momento del cambio. \\
+\bottomrule
+\end{longtable}
+
+\textbf{Relaciones:}
+\begin{itemize}[nosep]
+  \item N $\rightarrow$ 1 con \texttt{Usuario} (\texttt{usuario}).
+\end{itemize}
+\end{tabladesc}
+
+%============================================================
+\newpage
+\section{Diagrama Resumen de Relaciones}
+%============================================================
+
+A continuación se listan las cardinalidades entre las entidades principales:
+
+\bigskip
+\begin{longtable}{L{5cm} L{3cm} L{5cm}}
+\toprule
+\textbf{Entidad origen} & \textbf{Cardinalidad} & \textbf{Entidad destino} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Edificio               & 1 $\rightarrow$ N & Laboratorio \\
+Laboratorio            & N $\rightarrow$ 1 & Edificio \\
+Laboratorio            & N $\rightarrow$ 1 & Persona (encargado) \\
+Laboratorio            & 1 $\rightarrow$ N & Equipo \\
+Laboratorio            & 1 $\rightarrow$ N & Periférico \\
+Laboratorio            & 1 $\rightarrow$ N & InventarioItem \\
+Laboratorio            & 1 $\rightarrow$ N & Incidencia \\
+Laboratorio            & 1 $\rightarrow$ N & Mantenimiento \\
+Laboratorio            & 1 $\rightarrow$ N & Asignación \\
+Laboratorio            & 1 $\rightarrow$ N & ReportePasante \\
+Equipo                 & N $\rightarrow$ 1 & Laboratorio \\
+Equipo                 & N $\rightarrow$ 1 & EstadoEquipo \\
+Equipo                 & 1 $\rightarrow$ N & Periférico \\
+Equipo                 & 1 $\rightarrow$ N & Incidencia \\
+Equipo                 & 1 $\rightarrow$ N & Mantenimiento \\
+Equipo                 & 1 $\rightarrow$ N & InventarioItem \\
+Equipo                 & 1 $\rightarrow$ N & Asignación \\
+Persona                & 1 $\leftrightarrow$ 1 & Usuario \\
+Persona                & 1 $\rightarrow$ N & Laboratorio (encargado) \\
+Persona                & 1 $\rightarrow$ N & Incidencia \\
+Usuario                & N $\rightarrow$ 1 & Rol \\
+Usuario                & 1 $\rightarrow$ N & Mantenimiento (técnico) \\
+Usuario                & 1 $\rightarrow$ N & Asignación (técnico) \\
+Usuario                & 1 $\rightarrow$ N & ReportePasante (pasante) \\
+Usuario                & 1 $\rightarrow$ N & ReportePasante (atendió) \\
+Usuario                & 1 $\rightarrow$ N & Incidencia \\
+Usuario                & 1 $\rightarrow$ N & Log \\
+Usuario                & 1 $\rightarrow$ N & AuditChange \\
+Usuario                & 1 $\rightarrow$ N & PasanteHistorial \\
+Mantenimiento          & 1 $\leftrightarrow$ 1 & MantenimientoDetalle \\
+MantenimientoDetalle   & 1 $\rightarrow$ N & Checklist \\
+MantenimientoDetalle   & 1 $\rightarrow$ N & InsumoUsado \\
+Insumo                 & 1 $\rightarrow$ N & InsumoUsado \\
+CategoriaInventario    & 1 $\rightarrow$ N & InventarioItem \\
+Rol                    & 1 $\rightarrow$ N & Usuario \\
+TipoMantenimiento      & 1 $\rightarrow$ N & Mantenimiento \\
+EstadoMantenimiento    & 1 $\rightarrow$ N & Mantenimiento \\
+EstadoEquipo           & 1 $\rightarrow$ N & Equipo \\
+EstadoIncidencia       & 1 $\rightarrow$ N & Incidencia \\
+\bottomrule
+\end{longtable}
+
+%============================================================
+\newpage
+\section{Resumen de Convenciones}
+%============================================================
+
+\begin{itemize}[nosep]
+  \item \textbf{IDs:} Prefijo auto-generado con sufijo numérico (\texttt{EQ-001}, \texttt{LAB-001}, etc.).
+  \item \textbf{Auditoría:} Toda tabla operacional incluye \texttt{createdAt} y \texttt{updatedAt}.
+  \item \textbf{Borrado lógico:} Todas las tablas operacionales usan \texttt{activo} (BOOLEAN) en lugar de DELETE físico.
+  \item \textbf{Códigos de inventario:} Equipos, periféricos e ítems de inventario comparten la misma estructura de códigos (\texttt{codigoItic}, \texttt{codigoFacultativo}, \texttt{codigoUmsa}).
+  \item \textbf{Cascade:} Solo en relaciones críticas: Persona $\rightarrow$ Usuario (delete), MantenimientoDetalle $\rightarrow$ Checklist/InsumoUsado (delete).
+\end{itemize}
+
+\end{document}

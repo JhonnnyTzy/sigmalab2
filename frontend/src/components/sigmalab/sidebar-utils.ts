@@ -36,6 +36,7 @@ const MENUS: Record<string, NavItem[]> = {
   preventivo: [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "nuevo-mant", label: "Nuevo Mantenimiento", icon: PlusCircle, highlight: true },
+    { id: "asignados", label: "Equipos asignados", icon: Inbox },
     { id: "mis-mant", label: "Mis Mantenimientos", icon: ClipboardList },
     { id: "incidencias-bandeja", label: "Incidencias", icon: AlertTriangle },
     { id: "equipos", label: "Equipos", icon: Monitor },

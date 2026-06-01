@@ -10,7 +10,7 @@ import { useAuth, ROLE_LABEL, type AppRole } from "@/lib/auth";
 
 type EstadoIncidencia = ReportePasante["estado"];
 
-const ESTADOS: EstadoIncidencia[] = ["Nuevo", "Visto", "Pendiente", "En proceso", "Completado", "Resuelto"];
+const ESTADOS: EstadoIncidencia[] = ["Nuevo", "Visto", "Pendiente", "En proceso", "Nuevo mantenimiento asignado", "Completado", "Resuelto"];
 const PRIORIDADES = ["Alta", "Media", "Baja"] as const;
 const ROLES_REPORTE: AppRole[] = ["preventivo", "correctivo", "docente", "estudiante", "encargado", "invitado"];
 
@@ -21,6 +21,7 @@ function rolLabel(r?: AppRole) {
 export function BandejaIncidenciasView() {
   const { user, accounts } = useAuth();
   const reportes = useStore((s) => s.reportesPasante);
+  const labs = useStore((s) => s.labs);
 
   const [filtros, dispatchFiltros] = useReducer(
     (state: any, action: { type: string; field?: string; value?: any }) => {
@@ -40,11 +41,6 @@ export function BandejaIncidenciasView() {
       }
     },
     { ver: null, asignar: null, resolver: null } as { ver: ReportePasante | null; asignar: ReportePasante | null; resolver: ReportePasante | null }
-  );
-
-  const labs = useMemo(
-    () => Array.from(new Set(reportes.map((r) => r.laboratorio))).sort(),
-    [reportes],
   );
 
   const filtered = useMemo(() => {
@@ -108,7 +104,7 @@ export function BandejaIncidenciasView() {
           <FormField label="Laboratorio">
             <select value={filtros.fLab} onChange={(e) => dispatchFiltros({ type: "SET_FIELD", field: "fLab", value: e.target.value })} className={inputCls} aria-label="Laboratorio">
               <option value="">Todos</option>
-              {labs.map((l) => <option key={l} value={l}>{l}</option>)}
+              {labs.map((l) => <option key={l.id} value={l.nombre}>{l.nombre}</option>)}
             </select>
           </FormField>
         </div>
@@ -152,9 +148,11 @@ export function BandejaIncidenciasView() {
                       <Button size="sm" className="bg-teal hover:bg-teal/90" onClick={() => dispatchModal({ type: "SET_FIELD", field: "asignar", value: r })} title="Asignar a pasante">
                         <UserPlus className="mr-1 size-3" /> Asignar
                       </Button>
-                      <Button size="sm" className="bg-warning hover:bg-warning/90" onClick={() => dispatchModal({ type: "SET_FIELD", field: "resolver", value: r })} title="Resolver">
-                        <Wrench className="mr-1 size-3" /> Resolver
-                      </Button>
+                      {(r.categoria !== "Hardware" && r.categoria !== "Periférico") && (
+                        <Button size="sm" className="bg-warning hover:bg-warning/90" onClick={() => dispatchModal({ type: "SET_FIELD", field: "resolver", value: r })} title="Resolver incidencia menor">
+                          <Wrench className="mr-1 size-3" /> Resolver
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -195,15 +193,8 @@ export function BandejaIncidenciasView() {
 
       <AsignarModal rep={modal.asignar} onClose={() => dispatchModal({ type: "SET_FIELD", field: "asignar", value: null })} accounts={accounts} />
       <ResolverModal rep={modal.resolver} onClose={() => dispatchModal({ type: "SET_FIELD", field: "resolver", value: null })} adminUser={`${user.nombres} ${user.paterno}`} />
-    </div>
-  );
-}
-
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-      <span className="text-xs font-semibold text-muted-foreground">{k}</span>
-      <span className="text-sm font-bold text-navy">{v}</span>
+      {/* Resolver */}
+      <ResolverModal rep={modal.resolver} onClose={() => dispatchModal({ type: "SET_FIELD", field: "resolver", value: null })} />
     </div>
   );
 }
@@ -225,6 +216,7 @@ function AsignarModal({ rep, onClose, accounts }: { rep: ReportePasante | null; 
     if (!rep) return;
     if (!sel) { toast.error("Selecciona un pasante"); return; }
     const cand = opciones.find((o) => o.key === sel);
+    const esHwPer = rep.categoria === "Hardware" || rep.categoria === "Periférico";
     try {
       await store.addAsignacion({
         id: `AS-${Date.now()}`,
@@ -235,9 +227,23 @@ function AsignarModal({ rep, onClose, accounts }: { rep: ReportePasante | null; 
         prioridad: rep.prioridad,
         fecha: today(),
         estado: "Pendiente",
+        reporteId: rep.id,
       });
-      await store.updateReportePasante(rep.id, { estado: "En proceso" });
-      toast.success(`Asignada a ${cand?.label ?? sel}`);
+      if (esHwPer) {
+        store.pushMantenimiento({
+          equipo: rep.ubicacion && rep.ubicacion !== "—" ? rep.ubicacion : rep.laboratorio,
+          lab: rep.laboratorio,
+          tecnico: cand?.label ?? sel,
+          tipo: rol === "preventivo" ? "Preventivo" : "Correctivo",
+          fecha: today(),
+          estado: "Nuevo mantenimiento asignado",
+        });
+        await store.updateReportePasante(rep.id, { estado: "Nuevo mantenimiento asignado" });
+        toast.success(`Asignada a ${cand?.label ?? sel} — mantenimiento registrado`);
+      } else {
+        await store.updateReportePasante(rep.id, { estado: "En proceso" });
+        toast.success(`Asignada a ${cand?.label ?? sel}`);
+      }
       setPasante(""); setRol("correctivo"); onClose();
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "Error al asignar incidencia");
@@ -286,6 +292,12 @@ function ResolverModal({ rep, onClose, adminUser }: { rep: ReportePasante | null
     ].filter(Boolean).join("\n");
     try {
       await store.updateReportePasante(rep.id, { estado, resolucionDetalle: composed });
+      if (estado === "Resuelto" || estado === "Completado") {
+        const linked = store.getState().asignaciones.find((a) => a.reporteId === rep.id && a.estado !== "Completado");
+        if (linked) {
+          try { await store.updateAsignacion(linked.id, { estado: "Completado", resolucionDetalle: composed }); } catch (_) {}
+        }
+      }
       toast.success(`Incidencia marcada como ${estado}`);
       setDetalle(""); setAccion(""); setEstado("Resuelto"); onClose();
     } catch (e: any) {
@@ -321,3 +333,6 @@ function ResolverModal({ rep, onClose, adminUser }: { rep: ReportePasante | null
     </Modal>
   );
 }
+
+
+

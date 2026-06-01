@@ -1,0 +1,133 @@
+{
+  "info": {
+    "name": "SIGMALAB API",
+    "description": "Colección completa de endpoints del sistema SIGMALAB",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "http://localhost:4000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Login", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"123456\"\n}" }, "url": { "raw": "{{base}}/auth/login", "host": ["{{base}}"], "path": ["auth", "login"] } } },
+        { "name": "Register", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"email\": \"nuevo@test.com\",\n  \"password\": \"123456\",\n  \"nombres\": \"Juan\",\n  \"paterno\": \"Pérez\",\n  \"rol\": \"preventivo\"\n}" }, "url": { "raw": "{{base}}/auth/register", "host": ["{{base}}"], "path": ["auth", "register"] } } },
+        { "name": "Get Profile", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/auth/profile", "host": ["{{base}}"], "path": ["auth", "profile"] } } },
+        { "name": "Update Profile", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombres\": \"Juan Carlos\",\n  \"fotoUrl\": \"https://example.com/foto.jpg\"\n}" }, "url": { "raw": "{{base}}/auth/profile", "host": ["{{base}}"], "path": ["auth", "profile"] } } },
+        { "name": "List Users", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/auth/", "host": ["{{base}}"], "path": ["auth", ""] } } },
+        { "name": "Update User", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"rol\": \"correctivo\"\n}" }, "url": { "raw": "{{base}}/auth/:id", "host": ["{{base}}"], "path": ["auth", ":id"], "variable": [{ "key": "id", "value": "user-id" }] } } },
+        { "name": "Delete User", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/auth/:id", "host": ["{{base}}"], "path": ["auth", ":id"], "variable": [{ "key": "id", "value": "user-id" }] } } }
+      ]
+    },
+    {
+      "name": "Laboratorios",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/laboratorios/", "host": ["{{base}}"], "path": ["laboratorios", ""] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/laboratorios/:id", "host": ["{{base}}"], "path": ["laboratorios", ":id"], "variable": [{ "key": "id", "value": "lab-id" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Lab 101\",\n  \"edificioId\": \"edificio-id\",\n  \"piso\": 1,\n  \"capacidadEquipos\": 20,\n  \"capacidadPersonas\": 30\n}" }, "url": { "raw": "{{base}}/laboratorios/", "host": ["{{base}}"], "path": ["laboratorios", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Lab 101 - Actualizado\"\n}" }, "url": { "raw": "{{base}}/laboratorios/:id", "host": ["{{base}}"], "path": ["laboratorios", ":id"], "variable": [{ "key": "id", "value": "lab-id" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/laboratorios/:id", "host": ["{{base}}"], "path": ["laboratorios", ":id"], "variable": [{ "key": "id", "value": "lab-id" }] } } }
+      ]
+    },
+    {
+      "name": "Equipos",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/equipos/", "host": ["{{base}}"], "path": ["equipos", ""] } } },
+        { "name": "Estadísticas", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/equipos/estadisticas", "host": ["{{base}}"], "path": ["equipos", "estadisticas"] } } },
+        { "name": "Obtener por código", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/equipos/:codigo", "host": ["{{base}}"], "path": ["equipos", ":codigo"], "variable": [{ "key": "codigo", "value": "EQ-001" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"codigo\": \"EQ-001\",\n  \"nombre\": \"PC Principal\",\n  \"laboratorioId\": \"lab-id\",\n  \"marca\": \"Dell\",\n  \"modelo\": \"Optiplex 3080\",\n  \"numeroSerie\": \"SN123456\",\n  \"estadoId\": \"estado-id\",\n  \"sistemaOperativo\": \"Windows 11\",\n  \"fila\": \"A\",\n  \"puesto\": \"1\"\n}" }, "url": { "raw": "{{base}}/equipos/", "host": ["{{base}}"], "path": ["equipos", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"PC Principal - Actualizado\"\n}" }, "url": { "raw": "{{base}}/equipos/:codigo", "host": ["{{base}}"], "path": ["equipos", ":codigo"], "variable": [{ "key": "codigo", "value": "EQ-001" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/equipos/:codigo", "host": ["{{base}}"], "path": ["equipos", ":codigo"], "variable": [{ "key": "codigo", "value": "EQ-001" }] } } }
+      ]
+    },
+    {
+      "name": "Periféricos",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/perifericos/", "host": ["{{base}}"], "path": ["perifericos", ""] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/perifericos/:id", "host": ["{{base}}"], "path": ["perifericos", ":id"], "variable": [{ "key": "id", "value": "perif-id" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Teclado USB\",\n  \"tipo\": \"teclado\",\n  \"marca\": \"Logitech\",\n  \"estado\": \"Bueno\",\n  \"equipoId\": \"EQ-001\"\n}" }, "url": { "raw": "{{base}}/perifericos/", "host": ["{{base}}"], "path": ["perifericos", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Regular\"\n}" }, "url": { "raw": "{{base}}/perifericos/:id", "host": ["{{base}}"], "path": ["perifericos", ":id"], "variable": [{ "key": "id", "value": "perif-id" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/perifericos/:id", "host": ["{{base}}"], "path": ["perifericos", ":id"], "variable": [{ "key": "id", "value": "perif-id" }] } } }
+      ]
+    },
+    {
+      "name": "Insumos",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/insumos/", "host": ["{{base}}"], "path": ["insumos", ""] } } },
+        { "name": "Bajo Stock", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/insumos/bajo-stock", "host": ["{{base}}"], "path": ["insumos", "bajo-stock"] } } },
+        { "name": "Obtener por nombre", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/insumos/:nombre", "host": ["{{base}}"], "path": ["insumos", ":nombre"], "variable": [{ "key": "nombre", "value": "Toner" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Toner HP\",\n  \"cantidad\": 10,\n  \"stockMinimo\": 3,\n  \"unidad\": \"unidad\",\n  \"categoria\": \"consumible\"\n}" }, "url": { "raw": "{{base}}/insumos/", "host": ["{{base}}"], "path": ["insumos", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"cantidad\": 15\n}" }, "url": { "raw": "{{base}}/insumos/:nombre", "host": ["{{base}}"], "path": ["insumos", ":nombre"], "variable": [{ "key": "nombre", "value": "Toner HP" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/insumos/:nombre", "host": ["{{base}}"], "path": ["insumos", ":nombre"], "variable": [{ "key": "nombre", "value": "Toner HP" }] } } }
+      ]
+    },
+    {
+      "name": "Inventario",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/inventario/", "host": ["{{base}}"], "path": ["inventario", ""] } } },
+        { "name": "Stats", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/inventario/stats", "host": ["{{base}}"], "path": ["inventario", "stats"] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/inventario/:id", "host": ["{{base}}"], "path": ["inventario", ":id"], "variable": [{ "key": "id", "value": "inv-id" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Monitor Dell 22\",\n  \"tipo\": \"monitor\",\n  \"cantidad\": 5,\n  \"ubicacion\": \"Almacén\",\n  \"observaciones\": \"Nuevos\"\n}" }, "url": { "raw": "{{base}}/inventario/", "host": ["{{base}}"], "path": ["inventario", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"cantidad\": 8\n}" }, "url": { "raw": "{{base}}/inventario/:id", "host": ["{{base}}"], "path": ["inventario", ":id"], "variable": [{ "key": "id", "value": "inv-id" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/inventario/:id", "host": ["{{base}}"], "path": ["inventario", ":id"], "variable": [{ "key": "id", "value": "inv-id" }] } } }
+      ]
+    },
+    {
+      "name": "Asignaciones",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/asignaciones/", "host": ["{{base}}"], "path": ["asignaciones", ""] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/asignaciones/:id", "host": ["{{base}}"], "path": ["asignaciones", ":id"], "variable": [{ "key": "id", "value": "AS-001" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"equipo\": \"PC-01\",\n  \"lab\": \"Lab 101\",\n  \"asignadoA\": \"pasante@test.com\",\n  \"problema\": \"PC no enciende\",\n  \"prioridad\": \"Alta\",\n  \"fecha\": \"31/05/2026\"\n}" }, "url": { "raw": "{{base}}/asignaciones/", "host": ["{{base}}"], "path": ["asignaciones", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Resuelto\",\n  \"resolucionDetalle\": \"Se reemplazó la fuente de poder\"\n}" }, "url": { "raw": "{{base}}/asignaciones/:id", "host": ["{{base}}"], "path": ["asignaciones", ":id"], "variable": [{ "key": "id", "value": "AS-001" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/asignaciones/:id", "host": ["{{base}}"], "path": ["asignaciones", ":id"], "variable": [{ "key": "id", "value": "AS-001" }] } } }
+      ]
+    },
+    {
+      "name": "Incidencias",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/incidencias/", "host": ["{{base}}"], "path": ["incidencias", ""] } } },
+        { "name": "Stats", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/incidencias/stats", "host": ["{{base}}"], "path": ["incidencias", "stats"] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/incidencias/:id", "host": ["{{base}}"], "path": ["incidencias", ":id"], "variable": [{ "key": "id", "value": "INC-001" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"PC no enciende\",\n  \"descripcion\": \"La PC del puesto 3 no responde al botón de encendido\",\n  \"laboratorio\": \"Lab 101\",\n  \"prioridad\": \"Alta\"\n}" }, "url": { "raw": "{{base}}/incidencias/", "host": ["{{base}}"], "path": ["incidencias", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Resuelto\",\n  \"resolucionDetalle\": \"Se cambió la fuente de poder\"\n}" }, "url": { "raw": "{{base}}/incidencias/:id", "host": ["{{base}}"], "path": ["incidencias", ":id"], "variable": [{ "key": "id", "value": "INC-001" }] } } }
+      ]
+    },
+    {
+      "name": "Mantenimientos",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/mantenimientos/", "host": ["{{base}}"], "path": ["mantenimientos", ""] } } },
+        { "name": "Stats", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/mantenimientos/stats", "host": ["{{base}}"], "path": ["mantenimientos", "stats"] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/mantenimientos/:id", "host": ["{{base}}"], "path": ["mantenimientos", ":id"], "variable": [{ "key": "id", "value": "MNT-001" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"equipoId\": \"EQ-001\",\n  \"tipo\": \"Preventivo\",\n  \"descripcion\": \"Limpieza general\",\n  \"fechaProgramada\": \"2026-06-15\"\n}" }, "url": { "raw": "{{base}}/mantenimientos/", "host": ["{{base}}"], "path": ["mantenimientos", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Completado\"\n}" }, "url": { "raw": "{{base}}/mantenimientos/:id", "host": ["{{base}}"], "path": ["mantenimientos", ":id"], "variable": [{ "key": "id", "value": "MNT-001" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/mantenimientos/:id", "host": ["{{base}}"], "path": ["mantenimientos", ":id"], "variable": [{ "key": "id", "value": "MNT-001" }] } } },
+        { "name": "Crear Detalle", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"mantenimientoId\": \"MNT-001\",\n  \"descripcion\": \"Se realizó limpieza de ventiladores\",\n  \"insumosUsados\": \"Alcohol isopropílico\",\n  \"realizadoPor\": \"Juan Pérez\"\n}" }, "url": { "raw": "{{base}}/mantenimientos/detalle", "host": ["{{base}}"], "path": ["mantenimientos", "detalle"] } } }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/reportes/", "host": ["{{base}}"], "path": ["reportes", ""] } } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/reportes/:id", "host": ["{{base}}"], "path": ["reportes", ":id"], "variable": [{ "key": "id", "value": "REP-001" }] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"Teclado no funciona\",\n  \"descripcion\": \"Teclado del puesto 5 tiene teclas atascadas\",\n  \"laboratorio\": \"Lab 101\",\n  \"prioridad\": \"Media\"\n}" }, "url": { "raw": "{{base}}/reportes/", "host": ["{{base}}"], "path": ["reportes", ""] } } },
+        { "name": "Actualizar", "request": { "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Resuelto\",\n  \"resolucionDetalle\": \"Se reemplazó el teclado\"\n}" }, "url": { "raw": "{{base}}/reportes/:id", "host": ["{{base}}"], "path": ["reportes", ":id"], "variable": [{ "key": "id", "value": "REP-001" }] } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/reportes/:id", "host": ["{{base}}"], "path": ["reportes", ":id"], "variable": [{ "key": "id", "value": "REP-001" }] } } }
+      ]
+    },
+    {
+      "name": "Logs",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{token}}"}], "url": { "raw": "{{base}}/logs/", "host": ["{{base}}"], "path": ["logs", ""] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"accion\": \"Prueba manual\",\n  \"detalle\": \"Log creado desde Postman\",\n  \"modulo\": \"Sistema\",\n  \"tipoAccion\": \"Otro\"\n}" }, "url": { "raw": "{{base}}/logs/", "host": ["{{base}}"], "path": ["logs", ""] } } }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Health Check", "request": { "method": "GET", "url": { "raw": "{{base}}/health", "host": ["{{base}}"], "path": ["health"] } } }
+      ]
+    }
+  ]
+}

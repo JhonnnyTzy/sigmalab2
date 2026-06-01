@@ -18,23 +18,26 @@ interface FormState {
   nombres: string;
   paterno: string;
   materno: string;
+  ci: string;
+  direccion: string;
   email: string;
   registro: string;
   celular: string;
   password: string;
+  fechaIngreso: string;
 }
 
 const EMPTY: FormState = {
   id: "", role: "preventivo", nombres: "", paterno: "", materno: "",
-  email: "", registro: "", celular: "", password: "",
+  ci: "", direccion: "", email: "", registro: "", celular: "", password: "", fechaIngreso: "",
 };
 
 function fromAccount(a: AuthAccount): FormState {
   return {
     id: a.id, role: a.role,
     nombres: a.nombres ?? "", paterno: a.paterno ?? "", materno: a.materno ?? "",
-    email: a.email ?? "", registro: a.registro ?? "", celular: a.celular ?? "",
-    password: a.password ?? "",
+    ci: a.ci ?? "", direccion: a.direccion ?? "", email: a.email ?? "", registro: a.registro ?? "", celular: a.celular ?? "",
+    password: a.password ?? "", fechaIngreso: a.fechaIngreso ?? "",
   };
 }
 
@@ -111,9 +114,12 @@ export function UsuariosView() {
         nombres: form.nombres.trim(),
         paterno: form.paterno.trim(),
         materno: form.materno.trim() || undefined,
+        ci: form.ci.trim() || undefined,
+        direccion: form.direccion.trim() || undefined,
         email: usaRegistro ? undefined : identifier,
         registro: usaRegistro ? identifier : undefined,
         celular: form.celular.trim() || undefined,
+        fechaIngreso: (form.role === "preventivo" || form.role === "correctivo" || form.role === "estudiante") ? form.fechaIngreso || undefined : undefined,
       };
       try {
         const res = await apiClient.post("/auth/register", payload);
@@ -127,6 +133,7 @@ export function UsuariosView() {
           email: usaRegistro ? undefined : identifier,
           registro: usaRegistro ? identifier : undefined,
           celular: form.celular.trim() || undefined,
+          fechaIngreso: form.fechaIngreso || undefined,
         };
         auth.addAccount(newAcc);
         toast.success("Usuario creado");
@@ -137,17 +144,18 @@ export function UsuariosView() {
     } else if (modal.editing) {
       try {
         const patch: any = {
-          role: form.role,
+          roleId: form.role,
           nombres: form.nombres.trim(),
           paterno: form.paterno.trim(),
           materno: form.materno.trim() || undefined,
           email: usaRegistro ? undefined : identifier,
           registro: usaRegistro ? identifier : undefined,
           celular: form.celular.trim() || undefined,
+          fechaIngreso: (form.role === "preventivo" || form.role === "correctivo" || form.role === "estudiante") ? form.fechaIngreso || undefined : undefined,
         };
         if (form.password.trim()) patch.password = form.password;
         await apiClient.patch(`/auth/${modal.editing.id}`, patch);
-        auth.updateAccount(modal.editing.id, patch);
+        auth.updateAccount(modal.editing.id, { ...patch, role: patch.roleId });
         toast.success("Usuario actualizado"); dispatchModal({ type: "SET_FIELD", field: "editing", value: null });
       } catch (e: any) {
         toast.error(e?.response?.data?.error || "Error al actualizar usuario");
@@ -206,10 +214,21 @@ export function UsuariosView() {
       <FormField label="Apellido Materno">
         <input value={form.materno} onChange={(e) => setForm({ ...form, materno: e.target.value })} className={inputCls} aria-label="Apellido materno" />
       </FormField>
+      <FormField label="CI">
+        <input value={form.ci} onChange={(e) => setForm({ ...form, ci: e.target.value.replace(/\D/g, "") })} placeholder="Número de carnet" className={inputCls} aria-label="CI" />
+      </FormField>
+      <FormField label="Dirección">
+        <input value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} placeholder="Dirección domicilio" className={inputCls} aria-label="Dirección" />
+      </FormField>
       <FormField label="Celular">
         <input value={form.celular} placeholder="7XXXXXXX"
           onChange={(e) => setForm({ ...form, celular: e.target.value })} className={inputCls} aria-label="Celular" />
       </FormField>
+      {(form.role === "preventivo" || form.role === "correctivo" || form.role === "estudiante") && (
+        <FormField label="Fecha de ingreso">
+          <input type="date" value={form.fechaIngreso} onChange={(e) => setForm({ ...form, fechaIngreso: e.target.value })} className={inputCls} aria-label="Fecha de ingreso" />
+        </FormField>
+      )}
       <div className="md:col-span-2">
         <FormField label={modal.creating ? "Contraseña" : "Nueva contraseña (vacío = no cambiar)"} required={modal.creating}>
           <div className="relative">
@@ -267,6 +286,7 @@ export function UsuariosView() {
                 <th className="px-4 py-3 font-semibold">Rol</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
                 <th className="px-4 py-3 font-semibold">Celular</th>
+                <th className="px-4 py-3 font-semibold">Fecha Ingreso</th>
                 <th className="px-4 py-3 font-semibold text-right">Acciones</th>
               </tr>
             </thead>
@@ -284,6 +304,7 @@ export function UsuariosView() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{a.celular ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{a.fechaIngreso ? new Date(a.fechaIngreso).toLocaleDateString("es-BO") : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <button type="button" onClick={() => setProfileView(a)} title="Ver perfil"
@@ -303,7 +324,7 @@ export function UsuariosView() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Sin resultados</td></tr>
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">Sin resultados</td></tr>
               )}
             </tbody>
           </table>
@@ -311,8 +332,8 @@ export function UsuariosView() {
       </Panel>
 
       <Dialog open={!!profileView} onOpenChange={(v) => !v && setProfileView(null)}>
-        <DialogContent className="max-w-lg w-[95vw] p-0 rounded-2xl bg-white shadow-2xl overflow-hidden">
-          <DialogHeader className="border-b border-slate-100 px-6 py-4 bg-white">
+        <DialogContent className="max-w-lg w-[95vw] p-0 flex flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <DialogHeader className="border-b border-slate-100 px-6 py-4 bg-white shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-lg font-bold text-navy">Perfil de usuario</DialogTitle>
               <button type="button" onClick={() => setProfileView(null)} className="rounded-md p-1 text-muted-foreground hover:bg-slate-100">
@@ -321,7 +342,7 @@ export function UsuariosView() {
             </div>
           </DialogHeader>
           {profileView && (
-            <div className="p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div className="flex items-center gap-4 rounded-xl bg-gradient-to-br from-navy/5 to-teal-soft/30 p-4 border border-slate-100">
                 <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-navy text-lg font-bold text-white shadow">
                   {((profileView.nombres?.[0] ?? "") + (profileView.paterno?.[0] ?? "")).toUpperCase()}
@@ -336,6 +357,7 @@ export function UsuariosView() {
                 <ViewProfileField label="Email" value={profileView.email} />
                 <ViewProfileField label="Registro universitario" value={profileView.registro} />
                 <ViewProfileField label="Celular" value={profileView.celular} />
+                <ViewProfileField label="Fecha ingreso" value={profileView.fechaIngreso ? new Date(profileView.fechaIngreso).toLocaleDateString("es-BO") : undefined} />
                 <ViewProfileField label="Rol" value={ROLE_LABEL[profileView.role] || profileView.role} />
               </div>
             </div>

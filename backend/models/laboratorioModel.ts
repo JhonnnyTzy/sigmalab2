@@ -38,6 +38,10 @@ export async function createLaboratorio(data: {
   const edificio = await prisma.edificio.findUnique({ where: { id: data.edificioId } });
   if (!edificio) throw new AppError("Edificio no encontrado", 404);
 
+  // Validar nombre duplicado
+  const existing = await prisma.laboratorio.findFirst({ where: { nombre: data.nombre, activo: true } });
+  if (existing) throw new AppError("Ya existe un laboratorio activo con ese nombre", 409);
+
   return prisma.laboratorio.create({
     data,
     include: { edificio: true, _count: { select: { equipos: true } } },

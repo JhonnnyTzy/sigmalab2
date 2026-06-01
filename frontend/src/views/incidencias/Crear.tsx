@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
@@ -9,6 +9,20 @@ import { useAuth, ROLE_LABEL } from "@/lib/auth";
 
 const PRIORIDADES = ["Alta", "Media", "Baja"] as const;
 const CATEGORIAS = ["Hardware", "Software", "Red", "Periférico", "Otro"];
+
+const TITULOS_COMUNES = [
+  "Equipo no enciende",
+  "Pantalla azul / error de sistema",
+  "Lentitud al cargar",
+  "Sin conexión a internet / red",
+  "Mouse o teclado no funciona",
+  "Impresora no imprime",
+  "Problema con el proyector",
+  "Sobrecalentamiento / ventilador ruidoso",
+  "Software no abre / error al iniciar",
+  "Fallo en la fuente de poder",
+  "Otro",
+];
 
 const today = () => {
   const d = new Date();
@@ -30,6 +44,16 @@ export function CrearIncidenciaView() {
     },
     { equipo: "", lab: "", titulo: "", descripcion: "", categoria: CATEGORIAS[0], prioridad: "Media" as typeof PRIORIDADES[number] }
   );
+
+  const labId = useMemo(() => {
+    const lab = labs.find((l) => l.nombre === form.lab);
+    return lab?.id || "";
+  }, [form.lab, labs]);
+
+  const equiposFiltrados = useMemo(() => {
+    if (!labId) return [];
+    return equipos.filter((e) => e.lab === labId);
+  }, [labId, equipos]);
 
   const submit = async () => {
     if (!form.titulo.trim() || !form.descripcion.trim() || !form.lab) {
@@ -58,7 +82,8 @@ export function CrearIncidenciaView() {
       dispatch({ type: "SET_FIELD", field: "equipo", value: "" });
       dispatch({ type: "SET_FIELD", field: "lab", value: "" });
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Error al enviar incidencia");
+      const msg = e?.response?.data?.error || e?.message || "Error al enviar incidencia";
+      toast.error(msg);
     }
   };
 
@@ -74,15 +99,15 @@ export function CrearIncidenciaView() {
       <Panel title="Datos de la incidencia">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField label="Laboratorio" required>
-            <select value={form.lab} onChange={(e) => dispatch({ type: "SET_FIELD", field: "lab", value: e.target.value })} className={inputCls} aria-label="Laboratorio">
+            <select value={form.lab} onChange={(e) => { dispatch({ type: "SET_FIELD", field: "lab", value: e.target.value }); dispatch({ type: "SET_FIELD", field: "equipo", value: "" }); }} className={inputCls} aria-label="Laboratorio">
               <option value="">Selecciona…</option>
               {labs.map((l) => <option key={l.id} value={l.nombre}>{l.nombre}</option>)}
             </select>
           </FormField>
           <FormField label="Equipo (opcional)">
             <select value={form.equipo} onChange={(e) => dispatch({ type: "SET_FIELD", field: "equipo", value: e.target.value })} className={inputCls} aria-label="Equipo">
-              <option value="">- sin equipo específico -</option>
-              {equipos.map((e) => <option key={e.codigo} value={e.codigo}>{e.codigo} - {e.nombre}</option>)}
+              <option value="">{labId ? "- sin equipo específico -" : "Selecciona un laboratorio primero"}</option>
+              {equiposFiltrados.map((e) => <option key={e.codigo} value={e.codigo}>{e.codigo} - {e.nombre}</option>)}
             </select>
           </FormField>
           <FormField label="Categoría">
@@ -97,7 +122,29 @@ export function CrearIncidenciaView() {
           </FormField>
           <div className="md:col-span-2">
             <FormField label="Título" required>
-              <input value={form.titulo} onChange={(e) => dispatch({ type: "SET_FIELD", field: "titulo", value: e.target.value })} className={inputCls} placeholder="Ej: Equipo no enciende" aria-label="Título" />
+              <input
+                value={form.titulo}
+                onChange={(e) => dispatch({ type: "SET_FIELD", field: "titulo", value: e.target.value })}
+                className={inputCls}
+                placeholder="Ej: Equipo no enciende"
+                aria-label="Título"
+              />
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {TITULOS_COMUNES.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => dispatch({ type: "SET_FIELD", field: "titulo", value: form.titulo === t ? "" : t })}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      form.titulo === t
+                        ? "border-teal bg-teal text-white"
+                        : "border-slate-200 text-slate-500 hover:border-teal hover:text-teal"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </FormField>
           </div>
           <div className="md:col-span-2">

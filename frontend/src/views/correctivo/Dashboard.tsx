@@ -22,15 +22,19 @@ export function CorrectivoDashboard() {
   const { user } = useAuth();
   const { setView } = useApp();
   const histCorrectivos = useStore((s) => s.histCorrectivos);
+  const mantenimientos = useStore((s) => s.mantenimientos);
   const asignaciones = useStore((s) => s.asignaciones);
   const [intervalo, setIntervalo] = useState<Intervalo>("mes");
 
   const tecnicoName = getSessionFullName(user);
-  const username = getSessionUsername(user);
+  const nombreCompleto = user ? `${user.nombres} ${user.paterno}`.toLowerCase() : "";
   const misHist = useMemo(() => histCorrectivos.filter((h) => h.tecnico === tecnicoName), [histCorrectivos, tecnicoName]);
-  const misAsignaciones = asignaciones.filter((a) => a.asignadoA === username);
-  const pendientes = misAsignaciones.filter((a) => a.estado === "Pendiente").length;
-  const enProceso = misAsignaciones.filter((a) => a.estado === "En proceso").length;
+  const misAsignados = [
+    ...mantenimientos.filter((m) => m.estado === "Nuevo mantenimiento asignado" && m.tecnico?.toLowerCase().includes(nombreCompleto)),
+    ...asignaciones.filter((a) => (a.asignadoA === user?.id || a.asignadoA === getSessionUsername(user)) && (a.estado === "Pendiente" || a.estado === "En proceso")),
+  ];
+  const pendientes = misAsignados.length;
+  const enProceso = misHist.filter((h) => norm(h.estado) === "En proceso").length;
   const completados = misHist.filter((h) => norm(h.estado) === "Completado").length;
 
   // Serie temporal según intervalo
@@ -77,7 +81,7 @@ export function CorrectivoDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <button type="button" onClick={() => setView("asignados")} className="text-left"><MetricCard title="Equipos asignados" value={misAsignaciones.length} icon={Inbox} accent="warning" /></button>
+        <button type="button" onClick={() => setView("asignados")} className="text-left"><MetricCard title="Equipos asignados" value={misAsignados.length} icon={Inbox} accent="warning" /></button>
         <button type="button" onClick={() => setView("asignados")} className="text-left"><MetricCard title="Pendientes" value={pendientes} icon={AlertTriangle} accent="danger" /></button>
         <button type="button" onClick={() => setView("mis-correctivos")} className="text-left"><MetricCard title="En proceso" value={enProceso} icon={Clock} accent="info" /></button>
         <button type="button" onClick={() => setView("mis-correctivos")} className="text-left"><MetricCard title="Completados" value={completados} icon={CheckCircle2} accent="teal" /></button>
@@ -86,29 +90,24 @@ export function CorrectivoDashboard() {
         <CorrectivoCharts serie={serie} intervalo={intervalo} setIntervalo={setIntervalo} estados={estados} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Panel title={`Mis equipos asignados activos (${misAsignaciones.filter((a) => a.estado !== "Completado").length})`}
+        <Panel title={`Mis equipos asignados (${misAsignados.length})`}
           action={<button type="button" onClick={() => setView("asignados")} className="text-xs font-semibold text-teal hover:underline">Ver todos →</button>}>
-          {misAsignaciones.filter((a) => a.estado !== "Completado").length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No tienes asignaciones activas</p>
+          {misAsignados.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No tienes equipos asignados</p>
           ) : (
             <ul className="space-y-2">
-              {misAsignaciones.reduce((acc, a) => {
-                if (a.estado !== "Completado" && acc.length < 5) {
-                  acc.push(
-                    <li key={a.id} className={cn("rounded-lg border-l-4 bg-white p-3", a.prioridad === "Alta" ? "border-l-danger" : a.prioridad === "Media" ? "border-l-warning" : "border-l-info")}>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-mono text-xs font-bold text-teal">{a.equipo}</p>
-                          <p className="text-xs text-muted-foreground">{a.lab} · {a.fecha}</p>
-                          <p className="mt-1 line-clamp-1 text-xs">{a.problema}</p>
-                        </div>
-                        <button type="button" onClick={() => setView("asignados")} className="shrink-0 rounded-md bg-warning px-2.5 py-1 text-xs font-bold text-white hover:opacity-90">Ver</button>
-                      </div>
-                    </li>,
-                  );
-                }
-                return acc;
-              }, [] as React.ReactNode[])}
+              {misAsignados.slice(0, 5).map((it, i) => (
+                <li key={i} className={cn("rounded-lg border-l-4 bg-white p-3", "equipo" in it ? "border-l-teal" : "prioridad" in it && (it as any).prioridad === "Alta" ? "border-l-danger" : "border-l-warning")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs font-bold text-teal">{(it as any).equipo}</p>
+                      <p className="text-xs text-muted-foreground">{(it as any).lab} · {(it as any).fecha}</p>
+                      <p className="mt-1 line-clamp-1 text-xs">{(it as any).problema || (it as any).tipo}</p>
+                    </div>
+                    <button type="button" onClick={() => setView("asignados")} className="shrink-0 rounded-md bg-warning px-2.5 py-1 text-xs font-bold text-white hover:opacity-90">Ver</button>
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </Panel>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, AlertTriangle, Wrench, ClipboardCheck, AlertOctagon, Send, PlusCircle, Package } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Wrench, ClipboardCheck, AlertOctagon, Send, PlusCircle, Package, Inbox } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
 import { StatusBadge } from "@/components/sigmalab/StatusBadge";
 import { MetricCard } from "@/components/sigmalab/MetricCard";
@@ -13,10 +13,15 @@ import { PreventivoCharts } from "./PreventivoCharts";
 export function PreventivoDashboard() {
   const { user } = useAuth();
   const misPrev = useStore((s) => s.misPrev);
+  const mantenimientos = useStore((s) => s.mantenimientos);
   const detalles = useStore((s) => s.detalles);
   const { setView } = useApp();
   const [detalleSel, setDetalleSel] = useState<MantDetalle | null>(null);
 
+  const nombreCompleto = user ? `${user.nombres} ${user.paterno}`.toLowerCase() : "";
+  const asignados = mantenimientos.filter(
+    (m) => m.estado === "Nuevo mantenimiento asignado" && m.tecnico?.toLowerCase().includes(nombreCompleto)
+  );
   const hoy = misPrev.filter((m) => m.fecha === "20/04/2026").length;
   const completados = misPrev.filter((m) => m.estado === "Completado").length;
   const enProceso = misPrev.filter((m) => m.estado === "En proceso").length;
@@ -57,7 +62,8 @@ export function PreventivoDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+        <button type="button" onClick={() => setView("asignados")} className="text-left"><MetricCard title="Equipos asignados" value={asignados.length} icon={Inbox} accent="warning" /></button>
         <MetricCard title="Mis mantenimientos" value={misPrev.length} icon={Wrench} accent="teal" />
         <MetricCard title="Completados" value={completados} icon={ClipboardCheck} accent="info" />
         <MetricCard title="En proceso" value={enProceso} icon={AlertTriangle} accent="warning" />
@@ -96,6 +102,7 @@ export function PreventivoDashboard() {
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setView("nuevo-mant")} className="flex flex-col items-center gap-1 rounded-lg border border-teal bg-teal-soft p-3 text-xs font-semibold text-teal hover:bg-teal hover:text-white"><PlusCircle className="size-5" />Nuevo mant.</button>
             <button type="button" onClick={() => setView("mis-mant")} className="flex flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-semibold hover:border-teal hover:text-teal"><ClipboardCheck className="size-5" />Mis trabajos</button>
+            <button type="button" onClick={() => setView("asignados")} className="flex flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-semibold hover:border-teal hover:text-teal"><Inbox className="size-5" />Asignados</button>
             <button type="button" onClick={() => setView("insumos-disp")} className="flex flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-semibold hover:border-teal hover:text-teal"><Package className="size-5" />Insumos</button>
             <button type="button" onClick={() => setView("equipos")} className="flex flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-semibold hover:border-teal hover:text-teal"><Wrench className="size-5" />Equipos</button>
             <button type="button" onClick={() => setView("incidencias-bandeja")} className="flex flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-semibold hover:border-teal hover:text-teal"><AlertTriangle className="size-5" />Incidencias</button>

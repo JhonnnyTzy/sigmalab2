@@ -1,4 +1,4 @@
-import { useReducer, useState } from "react";
+import { useReducer, useState, useRef } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, History, Save } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
@@ -6,7 +6,7 @@ import { ChecklistTable } from "@/components/sigmalab/ChecklistTable";
 import { MantDetalleModal } from "@/components/sigmalab/MantDetalleModal";
 import { Modal } from "@/components/sigmalab/Modal";
 import { HARDWARE_CHECKLIST, SOFTWARE_CHECKLIST, PRUEBAS_CHECKLIST, INSUMOS } from "@/lib/sigmalab-data";
-import { store, useStore, type MantDetalle } from "@/lib/store";
+import { store, useStore, preventivoPrefill, type MantDetalle } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type Estado = "Pendiente" | "En proceso" | "Completado";
@@ -26,12 +26,34 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
   const equipos = useStore((s) => s.equipos);
   const detalles = useStore((s) => s.detalles);
 
+  // Consume prefill from "Atender" button
+  const prefRef = useRef<import("@/lib/store").PreventivoPrefill | null>(null);
+  if (prefRef.current === null) {
+    prefRef.current = preventivoPrefill.consume();
+  }
+  const p = prefRef.current;
+
   const isoFecha = (() => {
+    if (p?.fecha) return p.fecha;
     if (!initial) return "2026-04-20";
     const [d, m, y] = initial.orig.fecha.split("/");
     return `${y}-${m}-${d}`;
   })();
 
+  const labDesdePrefill = p?.lab ? labs.find((l) => l.nombre === p.lab || l.id === p.lab)?.id ?? "" : "";
+
+  const initChecklist = (items: string[]) =>
+    items.reduce((acc, it) => ({ ...acc, [it]: "" }), {} as Record<string, string>);
+  const initChecklistFromDetalle = (items: string[], detalleList?: { item: string; estado: string; obs: string }[]) => {
+    if (!detalleList) return initChecklist(items);
+    const m = new Map(detalleList.map((d) => [d.item, d.estado]));
+    return items.reduce((acc, it) => ({ ...acc, [it]: m.get(it) ?? "" }), {} as Record<string, string>);
+  };
+  const initObsFromDetalle = (items: string[], detalleList?: { item: string; estado: string; obs: string }[]) => {
+    if (!detalleList) return initChecklist(items);
+    const m = new Map(detalleList.map((d) => [d.item, d.obs]));
+    return items.reduce((acc, it) => ({ ...acc, [it]: m.get(it) ?? "" }), {} as Record<string, string>);
+  };
   const [form, dispatch] = useReducer(
     (state: any, action: { type: string; field?: string; value?: any }) => {
       switch (action.type) {
@@ -40,16 +62,22 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
       }
     },
     {
-      lab: initial ? (labs.find((l) => l.nombre === initial.orig.lab)?.id ?? "") : "",
-      equipo: initial?.orig.codigo ?? "",
+      lab: p?.lab ? labDesdePrefill : (initial ? (labs.find((l) => l.nombre === initial.orig.lab)?.id ?? "") : ""),
+      equipo: p?.equipo ?? initial?.orig.codigo ?? "",
       fecha: isoFecha,
-      horaInicio: initial?.orig.inicio ?? "08:30",
-      horaFin: initial?.orig.fin ?? "09:45",
-      estado: (initial?.orig.estado as Estado) ?? "Pendiente",
+      horaInicio: p?.horaInicio ?? initial?.orig.inicio ?? "08:30",
+      horaFin: p?.horaFin ?? initial?.orig.fin ?? "09:45",
+      estado: (p?.estado as Estado) ?? (initial?.orig.estado as Estado) ?? "Pendiente",
       insumosUsados: initial?.detalle?.insumos?.map((i) => ({ insumo: i.insumo })) ?? [{ insumo: "" }],
       incidencias: initial?.detalle?.incidencias ?? [{ problema: "", accion: "", seguimiento: false }],
       observaciones: initial?.detalle?.observaciones ?? "",
       recomendaciones: initial?.detalle?.recomendaciones ?? "",
+      hardwareEstados: initChecklistFromDetalle(HARDWARE_CHECKLIST, initial?.detalle?.hardware),
+      hardwareObs: initObsFromDetalle(HARDWARE_CHECKLIST, initial?.detalle?.hardware),
+      softwareEstados: initChecklistFromDetalle(SOFTWARE_CHECKLIST, initial?.detalle?.software),
+      softwareObs: initObsFromDetalle(SOFTWARE_CHECKLIST, initial?.detalle?.software),
+      pruebasEstados: initChecklistFromDetalle(PRUEBAS_CHECKLIST, initial?.detalle?.pruebas),
+      pruebasObs: initObsFromDetalle(PRUEBAS_CHECKLIST, initial?.detalle?.pruebas),
       touched: false,
       historialOpen: false,
     }
@@ -69,6 +97,12 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
     dispatch({ type: "SET_FIELD", field: "insumosUsados", value: [{ insumo: "" }] });
     dispatch({ type: "SET_FIELD", field: "estado", value: "Pendiente" });
     dispatch({ type: "SET_FIELD", field: "incidencias", value: [{ problema: "", accion: "", seguimiento: false }] });
+    dispatch({ type: "SET_FIELD", field: "hardwareEstados", value: initChecklist(HARDWARE_CHECKLIST) });
+    dispatch({ type: "SET_FIELD", field: "hardwareObs", value: initChecklist(HARDWARE_CHECKLIST) });
+    dispatch({ type: "SET_FIELD", field: "softwareEstados", value: initChecklist(SOFTWARE_CHECKLIST) });
+    dispatch({ type: "SET_FIELD", field: "softwareObs", value: initChecklist(SOFTWARE_CHECKLIST) });
+    dispatch({ type: "SET_FIELD", field: "pruebasEstados", value: initChecklist(PRUEBAS_CHECKLIST) });
+    dispatch({ type: "SET_FIELD", field: "pruebasObs", value: initChecklist(PRUEBAS_CHECKLIST) });
   };
 
   const handleSave = async () => {
@@ -82,16 +116,15 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
     const incidenciasReales = form.incidencias.filter((i) => i.problema.trim()).length;
     const insumosFmt = form.insumosUsados.reduce((acc, i) => {
       if (i.insumo) acc.push({
-        insumo: i.insumo,
+        insumoNombre: i.insumo,
         cantidad: "",
-        unidad: INSUMOS.find((x) => x.nombre === i.insumo)?.unidad ?? "",
       });
       return acc;
-    }, [] as { insumo: string; cantidad: string; unidad: string }[]);
+    }, [] as { insumoNombre: string; cantidad: string }[]);
     const detallePayload: Partial<MantDetalle> = {
-      hardware: HARDWARE_CHECKLIST.map((it) => ({ item: it, estado: "OK", obs: "" })),
-      software: SOFTWARE_CHECKLIST.map((it) => ({ item: it, estado: "OK", obs: "" })),
-      pruebas: PRUEBAS_CHECKLIST.map((it) => ({ item: it, estado: "OK", obs: "" })),
+      hardware: HARDWARE_CHECKLIST.map((it) => ({ item: it, estado: form.hardwareEstados[it] || "OK", obs: form.hardwareObs[it] || "" })),
+      software: SOFTWARE_CHECKLIST.map((it) => ({ item: it, estado: form.softwareEstados[it] || "OK", obs: form.softwareObs[it] || "" })),
+      pruebas: PRUEBAS_CHECKLIST.map((it) => ({ item: it, estado: form.pruebasEstados[it] || "OK", obs: form.pruebasObs[it] || "" })),
       incidencias: form.incidencias, insumos: insumosFmt, observaciones: form.observaciones, recomendaciones: form.recomendaciones,
     };
     try {
@@ -163,9 +196,15 @@ export function NuevoMantPreventivoView({ initial = null, onSaved }: Props) {
             <div><label htmlFor="np-hora-fin" className="mb-1 block text-xs font-semibold text-muted-foreground">Hora fin</label><input id="np-hora-fin" type="time" value={form.horaFin} onChange={(e) => dispatch({ type: "SET_FIELD", field: "horaFin", value: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" aria-label="Hora fin" /></div>
           </div>
 
-          <Section title="Mantenimiento de hardware"><ChecklistTable items={HARDWARE_CHECKLIST} /></Section>
-          <Section title="Mantenimiento de software"><ChecklistTable items={SOFTWARE_CHECKLIST} /></Section>
-          <Section title="Pruebas de funcionamiento"><ChecklistTable items={PRUEBAS_CHECKLIST} /></Section>
+          <Section title="Mantenimiento de hardware"><ChecklistTable items={HARDWARE_CHECKLIST} estados={form.hardwareEstados} observaciones={form.hardwareObs}
+            onEstadoChange={(it, v) => dispatch({ type: "SET_FIELD", field: "hardwareEstados", value: { ...form.hardwareEstados, [it]: v } })}
+            onObsChange={(it, v) => dispatch({ type: "SET_FIELD", field: "hardwareObs", value: { ...form.hardwareObs, [it]: v } })} /></Section>
+          <Section title="Mantenimiento de software"><ChecklistTable items={SOFTWARE_CHECKLIST} estados={form.softwareEstados} observaciones={form.softwareObs}
+            onEstadoChange={(it, v) => dispatch({ type: "SET_FIELD", field: "softwareEstados", value: { ...form.softwareEstados, [it]: v } })}
+            onObsChange={(it, v) => dispatch({ type: "SET_FIELD", field: "softwareObs", value: { ...form.softwareObs, [it]: v } })} /></Section>
+          <Section title="Pruebas de funcionamiento"><ChecklistTable items={PRUEBAS_CHECKLIST} estados={form.pruebasEstados} observaciones={form.pruebasObs}
+            onEstadoChange={(it, v) => dispatch({ type: "SET_FIELD", field: "pruebasEstados", value: { ...form.pruebasEstados, [it]: v } })}
+            onObsChange={(it, v) => dispatch({ type: "SET_FIELD", field: "pruebasObs", value: { ...form.pruebasObs, [it]: v } })} /></Section>
 
           <Section title="Registro de incidencias">
             <div className="space-y-2">

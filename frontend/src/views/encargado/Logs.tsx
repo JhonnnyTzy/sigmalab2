@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState, useReducer } from "react";
-import { Activity, Eye, Search, X } from "lucide-react";
+import { Activity, Eye, RefreshCw, Search, X } from "lucide-react";
 import { Panel } from "@/components/sigmalab/Panel";
 import { Modal } from "@/components/sigmalab/Modal";
-import { useStore, type LogEntry } from "@/lib/store";
+import { useStore, fetchLogs, type LogEntry } from "@/lib/store";
 
 const TITLE_RX = /^(Lic\.|Ing\.|Dr\.|Dra\.|Mg\.|Mgr\.|Prof\.)\s+/i;
 
@@ -100,9 +100,18 @@ export function LogsView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-navy">Logs del sistema</h1>
-        <p className="text-sm text-muted-foreground">Auditoría de acciones recientes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-navy">Logs del sistema</h1>
+          <p className="text-sm text-muted-foreground">Auditoría de acciones recientes</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => fetchLogs()}
+          className="inline-flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy/90"
+        >
+          <RefreshCw className="size-4" /> Actualizar logs
+        </button>
       </div>
 
       <Panel title="Filtros">
@@ -232,6 +241,7 @@ function LogDetail({
             "bg-emerald-100 text-emerald-700"
           }`}>{entry.estado ?? "Éxito"}</span>
         } />
+        <Row label="IP origen" value={entry.ipOrigen ? <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono">{entry.ipOrigen}</code> : undefined} />
         <Row label="Fecha y hora" value={entry.ts} />
       </div>
 

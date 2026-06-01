@@ -197,21 +197,138 @@ npm run dev
 
 ---
 
-## API — Endpoints disponibles
+## API — Endpoints
 
 ### Autenticación
-| Método | Ruta               | Auth     | Descripción                |
-|--------|--------------------|----------|----------------------------|
-| POST   | `/api/auth/login`  | No       | Iniciar sesión             |
-| GET    | `/api/auth/profile`| JWT      | Obtener perfil             |
-| PATCH  | `/api/auth/profile`| JWT      | Actualizar perfil          |
+| Método | Ruta                | Auth     | Rol              | Descripción                     |
+|--------|---------------------|----------|------------------|---------------------------------|
+| POST   | `/api/auth/login`   | No       | —                | Iniciar sesión                  |
+| GET    | `/api/auth/profile` | JWT      | *cualquiera*     | Obtener perfil propio           |
+| PATCH  | `/api/auth/profile` | JWT      | *cualquiera*     | Actualizar perfil propio        |
 
-### Catálogos
-| Método | Ruta                          | Auth | Descripción                     |
-|--------|-------------------------------|------|----------------------------------|
-| GET    | `/api/equipos`                | JWT  | Listar equipos                  |
-| GET    | `/api/equipos/:codigo`        | JWT  | Detalle de equipo               |
-| GET    | `/api/laboratorios`           | JWT  | Listar laboratorios             |
+### CRUD principales (Encargado)
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/laboratorios`           | *todos*          | Listar laboratorios             |
+| POST   | `/api/laboratorios`           | encargado        | Crear laboratorio               |
+| PATCH  | `/api/laboratorios/:id`       | encargado        | Actualizar laboratorio          |
+| DELETE | `/api/laboratorios/:id`       | encargado        | Eliminar (soft) laboratorio     |
+| GET    | `/api/equipos`                | *todos*          | Listar equipos                  |
+| GET    | `/api/equipos/:codigo`        | *todos*          | Detalle de equipo               |
+| POST   | `/api/equipos`                | encargado        | Crear equipo                    |
+| PATCH  | `/api/equipos/:codigo`        | encargado        | Actualizar equipo               |
+| DELETE | `/api/equipos/:codigo`        | encargado        | Eliminar (soft) equipo          |
+| GET    | `/api/insumos`                | *todos*          | Listar insumos                  |
+| POST   | `/api/insumos`                | encargado        | Crear insumo                    |
+| PATCH  | `/api/insumos/:nombre`        | encargado        | Actualizar insumo               |
+| DELETE | `/api/insumos/:nombre`        | encargado        | Eliminar (soft) insumo          |
+| GET    | `/api/perifericos`            | *todos*          | Listar periféricos              |
+| POST   | `/api/perifericos`            | encargado        | Crear periférico                |
+| PATCH  | `/api/perifericos/:id`        | encargado        | Actualizar periférico           |
+| DELETE | `/api/perifericos/:id`        | encargado        | Eliminar (soft) periférico      |
+| GET    | `/api/inventario`             | *todos*          | Listar inventario               |
+| POST   | `/api/inventario`             | encargado        | Crear ítem inventario           |
+| PATCH  | `/api/inventario/:id`         | encargado        | Actualizar ítem inventario      |
+| DELETE | `/api/inventario/:id`         | encargado        | Eliminar (soft) inventario      |
+| GET    | `/api/inventario/stats`       | *todos*          | Estadísticas de inventario      |
+
+### Usuarios (Encargado)
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/auth`                   | encargado        | Listar usuarios                 |
+| POST   | `/api/auth/register`          | encargado        | Crear usuario                   |
+| PATCH  | `/api/auth/:id`               | encargado        | Actualizar usuario              |
+| DELETE | `/api/auth/:id`               | encargado        | Eliminar (soft) usuario         |
+
+### Incidencias
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/incidencias`            | *todos*          | Listar incidencias              |
+| POST   | `/api/incidencias`            | docente/estudiante| Crear incidencia               |
+| PATCH  | `/api/incidencias/:id`        | encargado        | Actualizar incidencia           |
+| DELETE | `/api/incidencias/:id`        | encargado        | Eliminar incidencia             |
+
+### Asignaciones (Correctivo)
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/asignaciones`           | *todos*          | Listar asignaciones             |
+| POST   | `/api/asignaciones`           | encargado        | Crear asignación                |
+| PATCH  | `/api/asignaciones/:id`       | correctivo       | Resolver/actualizar asignación  |
+
+### Mantenimientos (Preventivo)
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/mantenimientos`         | *todos*          | Listar mantenimientos           |
+| POST   | `/api/mantenimientos`         | preventivo       | Crear mantenimiento             |
+| PATCH  | `/api/mantenimientos/:id`     | preventivo       | Actualizar mantenimiento        |
+| GET    | `/api/mantenimientos/activos` | preventivo       | Mantenimientos activos          |
+
+### Reportes de Pasante
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/reportes`               | *todos*          | Listar reportes                 |
+| POST   | `/api/reportes`               | preventivo/correctivo| Crear reporte              |
+| PATCH  | `/api/reportes/:id`           | encargado        | Atender/resolver reporte        |
+
+### Logs (auditoría)
+| Método | Ruta                          | Rol              | Descripción                     |
+|--------|-------------------------------|------------------|---------------------------------|
+| GET    | `/api/logs`                   | encargado        | Listar logs de auditoría        |
+
+> **Nota**: Todas las eliminaciones son **lógicas** (`activo = false`). Cada modificación queda registrada en la tabla `logs`.
+
+---
+
+## Roles y Permisos
+
+| Rol                | Nivel | Acceso                                           |
+|--------------------|-------|--------------------------------------------------|
+| **Encargado ITIC** | 5     | CRUD todo + usuarios + logs + reportes           |
+| **Pasante Preventivo** | 3 | Mantenimientos preventivos + reportes diarios     |
+| **Pasante Correctivo** | 3 | Asignaciones correctivas + reportes diarios       |
+| **Docente**        | 2     | Crear incidencias, ver equipos/labs               |
+| **Estudiante**     | 2     | Crear incidencias, ver equipos/labs               |
+| **Invitado**       | 1     | Solo lectura (equipos, laboratorios, inventario)  |
+
+---
+
+## Red Local y Acceso Remoto
+
+### Red local
+El backend escucha en `0.0.0.0:4000`, accesible desde cualquier dispositivo en la misma red:
+```
+http://<IP_LOCAL>:4000/api/health
+```
+
+### Acceso remoto (ngrok)
+```bash
+# 1. Iniciar backend + frontend
+cd backend && npm run dev
+cd frontend && npm run dev
+
+# 2. En otra terminal, exponer el frontend
+ngrok http http://localhost:5173
+# Compartir la URL https://xxxx.ngrok-free.app
+```
+
+> El proxy de Vite (`vite.config.ts`) redirige `/api` → `localhost:4000`, por lo que **un solo túnel** es suficiente.
+
+### Script rápido
+```bash
+.\iniciar-red.bat      # Inicia backend y frontend con una sola pila
+```
+
+---
+
+## Documentación
+
+La documentación completa se encuentra en la carpeta `docs/`:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `docs/documentacion-tecnica.md` | Documentación técnica: 22 modelos DB, 55+ endpoints, stack, seguridad, despliegue |
+| `docs/manual-desarrollador.md` | Guía de desarrollo: setup, estructura, convenciones, cómo agregar módulos, troubleshooting |
+| `docs/manual-usuario.md` | Manual de usuario por rol: pantallas, funciones paso a paso |
 
 ---
 
@@ -237,6 +354,84 @@ npm run dev
 - **Autorización**: middleware por roles (encargado, preventivo, correctivo, etc.)
 - **Validación**: Zod en todas las entradas de la API
 - **CORS**: orígenes configurados por entorno
+
+---
+
+## Base de Datos
+
+| Propiedad         | Detalle                          |
+|-------------------|----------------------------------|
+| Motor             | PostgreSQL 15+                   |
+| Nombre            | `sigmalabv3`                     |
+| Host              | `localhost:5432`                  |
+| Usuario           | `postgres`                       |
+| Contraseña        | `1234`                           |
+| Modelos           | 22 tablas en esquema `public`    |
+| Convención        | `snake_case` en columnas y tablas |
+
+### Modelos principales
+```
+Edificio → Laboratorio → Equipo → Periferico
+                                        ↓
+Insumo ← InsumoUsado ← MantenimientoDetalle ← Checklist
+                                        ↓
+Rol → Usuario → Asignacion
+             → Incidencia → EstadoIncidencia
+             → Mantenimiento → EstadoMantenimiento, TipoMantenimiento
+             → ReportePasante
+             → Log
+CategoriaInventario → InventarioItem → Equipo, Laboratorio
+```
+
+---
+
+## Sistema de Auditoría
+
+Toda operación de escritura (crear, actualizar, eliminar) registra un log en la tabla `logs`:
+
+```json
+{
+  "usuarioId": "USR-001",
+  "accion": "Actualizar equipo",
+  "detalle": "Se actualizó el equipo LAB-001-PC-01",
+  "modulo": "Equipos",
+  "entidad": "LAB-001-PC-01",
+  "tipoAccion": "Actualizar"
+}
+```
+
+- Los logs se consultan desde el panel del **Encargado**
+- Incluyen: usuario, acción, detalle, módulo, entidad afectada, timestamp, IP de origen
+- No se eliminan físicamente
+
+---
+
+## Troubleshooting
+
+| Problema | Causa probable | Solución |
+|----------|---------------|----------|
+| `ECONNREFUSED` al conectar BD | PostgreSQL no iniciado | `net start postgresql-x64-15` |
+| `PrismaClientInitializationError` | Schema desactualizado | `cd backend && npx prisma generate` |
+| `token no proporcionado` en peticiones | JWT vencido o no enviado | Re‑iniciar sesión |
+| `403 Forbidden` | Rol sin permiso para la ruta | Verificar tabla roles |
+| Frontend dice `Network Error` | Backend no corriendo | `cd backend && npm run dev` |
+| ngrok no conecta | ngrok no instalado | `winget install ngrok` o descargar de ngrok.com |
+| Login no funciona | BD no tiene seed data | Ejecutar `database/setup.bat` |
+| Error `fetch` en vistas | API en puerto incorrecto | Verificar `VITE_API_PORT` en `frontend/.env` |
+| Soft‑delete no funciona | `activo` no filtrado en query | Agregar `where: { activo: true }` en el model |
+
+---
+
+## Bug Fixes Aplicados
+
+| Bug | Síntoma | Solución |
+|-----|---------|----------|
+| Bandeja crash | ReferenceError: `ver is not defined` | Cambiar `ver.xxx` → `modal.ver.xxx` en `Bandeja.tsx` |
+| Preventivo report filter | Filtraba por username, no por ID | `r.pasante === getSessionUsername(user)` → `r.pasanteId === user?.id` |
+| Historial button inoperante | Botón reloj sin efecto | Añadir acción `OPEN_WITH_TAB` + prop `initialTab` en `EquipmentDetailModal` |
+| Usuarios delete sin API | `confirmDelete()` fire‑and‑forget | Agregar `await apiClient.delete()` + `try/catch` |
+| Usuarios edit sin API | Solo actualizaba store local | Agregar `await apiClient.patch()` antes de `auth.updateAccount()` |
+| Modales sin await | Operaciones asíncronas sin `try/catch` | Agregar `async/await` + `try/catch` en Bandeja, BandejaIncidencias, ReportesPasantes, Crear incidencia, Reportes preventivo |
 
 ---
 

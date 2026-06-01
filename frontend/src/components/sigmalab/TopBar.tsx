@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Bell, LogOut, Menu } from "lucide-react";
 import { toast } from "sonner";
-import { auth, useAuth, ROLE_LABEL } from "@/lib/auth";
+import { auth, useAuth, ROLE_LABEL, getSessionUsername } from "@/lib/auth";
 import { useApp } from "@/lib/use-app";
 import { useStore } from "@/lib/store";
+import apiClient from "@/services/apiClient";
 
 interface TopBarProps {
   onOpenSidebar?: () => void;
@@ -13,21 +15,36 @@ export function TopBar({ onOpenSidebar }: TopBarProps) {
   const { setView, role } = useApp();
   const reportes = useStore((s) => s.reportesPasante);
   const asignaciones = useStore((s) => s.asignaciones);
+  const mantenimientos = useStore((s) => s.mantenimientos);
+  const [imgError, setImgError] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   
+  // If session has no fotoUrl, try loading it from API
+  useEffect(() => {
+    if (!user || user.fotoUrl) return;
+    apiClient.get("/auth/profile").then((res) => {
+      if (res.data?.fotoUrl) {
+        auth.updateSession(res.data);
+      }
+    }).catch(() => {});
+  }, [user?.id]);
+
   if (!user) return null;
   
   const initials = `${user.nombres[0] ?? ""}${user.paterno[0] ?? ""}`.toUpperCase();
   const displayName = [user.nombres, user.paterno, user.materno].filter(Boolean).join(" ");
+  const hasPhoto = !!user.fotoUrl;
   const showBell = role === "encargado" || role === "preventivo" || role === "correctivo";
   const cerrados = new Set(["Resuelto", "Completado"]);
+  const nombreCompleto = `${user.nombres} ${user.paterno}`.toLowerCase();
   let count = 0;
   
   if (role === "encargado") {
     count = reportes.filter((r) => !cerrados.has(r.estado)).length;
-  } else if (role === "preventivo") {
-    count = asignaciones.filter((a) => a.asignadoA === "ysarzuri" && a.estado !== "Completado").length;
-  } else if (role === "correctivo") {
-    count = asignaciones.filter((a) => a.asignadoA === "jarias" && a.estado !== "Completado").length;
+  } else {
+    const uname = getSessionUsername(user);
+    count = asignaciones.filter((a) => (a.asignadoA === user.id || a.asignadoA === uname) && a.estado !== "Completado").length;
+    count += mantenimientos.filter((m) => m.estado === "Nuevo mantenimiento asignado" && m.tecnico?.toLowerCase().includes(nombreCompleto)).length;
   }
 
   return (
@@ -79,9 +96,25 @@ export function TopBar({ onOpenSidebar }: TopBarProps) {
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{ROLE_LABEL[user.role]}</p>
         </button>
         
-        {/* Perfil de usuario (Iniciales) */}
-        <button type="button" onClick={() => setView("profile")} title="Mi Perfil" className="flex size-9 sm:size-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-blue-800 text-xs sm:text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105">
-          {initials}
+        {/* Perfil de usuario (Foto / Avatar) */}
+        <button type="button" onClick={() => setView("profile")} title="Mi Perfil" className="size-9 sm:size-10 overflow-hidden rounded-full border-2 border-slate-200 shadow-md hover:shadow-lg transition-all hover:scale-105">
+          {hasPhoto && !photoError ? (
+            <img
+              src={user.fotoUrl!}
+              alt={displayName}
+              className="size-full object-cover"
+              onError={() => setPhotoError(true)}
+            />
+          ) : imgError ? (
+            <span className="flex size-full items-center justify-center bg-gradient-to-br from-navy to-blue-800 text-xs sm:text-sm font-bold text-white">{initials}</span>
+          ) : (
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=1e3a5f&color=fff&size=128&bold=true`}
+              alt={displayName}
+              className="size-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          )}
         </button>
         
         {/* Botón Salir */}

@@ -30,6 +30,14 @@ export async function createAsignacion(data: {
   equipoCodigo: string; laboratorioId?: string; tecnicoId: string;
   problema: string; prioridad?: string; fecha?: string;
 }) {
+  // Validate FK references before create
+  const [equipo, tecnico] = await Promise.all([
+    prisma.equipo.findUnique({ where: { codigo: data.equipoCodigo } }),
+    prisma.usuario.findUnique({ where: { id: data.tecnicoId } }),
+  ]);
+  if (!equipo) throw new AppError(`Equipo "${data.equipoCodigo}" no encontrado`, 400);
+  if (!tecnico) throw new AppError(`Usuario "${data.tecnicoId}" no encontrado`, 400);
+
   return prisma.asignacion.create({
     data: {
       id: `AS-${Date.now()}`,

@@ -55,7 +55,7 @@ export function NuevoCorrectivoView() {
     },
     {
       equipo: p?.equipo ?? "",
-      busq: "",
+      busq: p?.busq ?? "",
       showSug: false,
       labFiltro: "",
       tipo: p?.tipoIncidencia ?? "Hardware",
@@ -157,12 +157,18 @@ export function NuevoCorrectivoView() {
         );
         toast.success(form.estado === "Pendiente" ? "Avance guardado como pendiente" : "Mantenimiento registrado");
       }
+      let asigConReporte: string | undefined;
       if (asignacionRef.current) {
+        const a = asignaciones.find((x) => x.id === asignacionRef.current);
+        asigConReporte = a?.reporteId;
         await store.updateAsignacion(asignacionRef.current, { estado: form.estado });
         setEditKey(null); asignacionRef.current = null;
       } else {
-        const asig = asignaciones.find((a) => a.equipo === form.equipo && a.asignadoA === username && a.estado !== "Completado");
-        if (asig) await store.updateAsignacion(asig.id, { estado: form.estado });
+        const a = asignaciones.find((x) => x.equipo === form.equipo && (x.asignadoA === user?.id || x.asignadoA === username) && x.estado !== "Completado");
+        if (a) { asigConReporte = a.reporteId; await store.updateAsignacion(a.id, { estado: form.estado }); }
+      }
+      if (asigConReporte) {
+        await store.updateReportePasante(asigConReporte, { estado: form.estado === "Completado" ? "Resuelto" : form.estado });
       }
       // limpiar
       setEditKey(null);

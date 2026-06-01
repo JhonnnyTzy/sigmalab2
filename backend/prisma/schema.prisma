@@ -75,10 +75,12 @@ model Persona {
   paterno               String           @db.VarChar(50)
   materno               String?          @db.VarChar(50)
   ci                    String?          @unique @db.VarChar(20)
+  direccion             String?          @db.VarChar(255)
   registroUniversitario String?          @unique @map("registro_universitario") @db.VarChar(20)
   email                 String?          @unique @db.VarChar(150)
   celular               String?          @db.VarChar(20)
   fotoUrl               String?          @map("foto_url")
+  fechaIngresoPasante   DateTime?        @map("fecha_ingreso_pasante") @db.Date
   activo                Boolean          @default(true)
   createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt             DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
@@ -102,14 +104,29 @@ model Usuario {
   asignaciones      Asignacion[]
   incidencias       Incidencia[]
   logs              Log[]
+  auditChanges      AuditChange[]
   mantenimientos    Mantenimiento[]
   reportesAtendidos ReportePasante[] @relation("AtendidoPor")
   reportesPasante   ReportePasante[]
+  pasanteHistorial  PasanteHistorial[]
   persona           Persona          @relation(fields: [personaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   rol               Rol              @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([roleId], map: "idx_usuarios_role")
   @@map("usuarios")
+}
+
+model PasanteHistorial {
+  id           String   @id @db.VarChar(30)
+  usuarioId    String   @map("usuario_id") @db.VarChar(20)
+  fechaIngreso DateTime @map("fecha_ingreso") @db.Date
+  fechaCambio  DateTime @default(now()) @map("fecha_cambio") @db.Timestamp(6)
+  modificadoPor String? @map("modificado_por") @db.VarChar(20)
+  motivo       String?  @db.VarChar(200)
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId], map: "idx_pasante_historial_usuario")
+  @@map("pasante_historial")
 }
 
 model Laboratorio {
@@ -149,8 +166,14 @@ model Equipo {
   marca            String?          @db.VarChar(50)
   modelo           String?          @db.VarChar(100)
   numeroSerie      String?          @unique @map("numero_serie") @db.VarChar(100)
+  codigoItic       String?          @unique @map("codigo_itic") @db.VarChar(50)
+  codigoFacultativo String?         @map("codigo_facultativo") @db.VarChar(50)
+  codigoUmsa       String?          @map("codigo_umsa") @db.VarChar(50)
   estadoId         String           @map("estado_id") @db.VarChar(30)
   fechaCompra      DateTime?        @map("fecha_compra") @db.Date
+  fechaBaja        DateTime?        @map("fecha_baja") @db.Date
+  motivoBaja       String?          @map("motivo_baja") @db.Text
+  reemplazadoPor   String?          @map("reemplazado_por") @db.VarChar(30)
   activo           Boolean          @default(true)
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
@@ -169,18 +192,21 @@ model Equipo {
 }
 
 model Periferico {
-  id            String       @id @db.VarChar(30)
-  tipo          String       @db.VarChar(50)
-  marca         String?      @db.VarChar(50)
-  modelo        String?      @db.VarChar(100)
-  numeroSerie   String?      @map("numero_serie") @db.VarChar(100)
-  laboratorioId String?      @map("laboratorio_id") @db.VarChar(20)
-  equipoCodigo  String?      @map("equipo_codigo") @db.VarChar(30)
-  estado        String       @default("Funcionando") @db.VarChar(30)
-  activo        Boolean      @default(true)
-  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
-  equipo        Equipo?      @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
-  laboratorio   Laboratorio? @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              String       @id @db.VarChar(30)
+  tipo            String       @db.VarChar(50)
+  marca           String?      @db.VarChar(50)
+  modelo          String?      @db.VarChar(100)
+  numeroSerie     String?      @map("numero_serie") @db.VarChar(100)
+  codigoItic      String?      @unique @map("codigo_itic") @db.VarChar(50)
+  codigoFacultativo String?    @map("codigo_facultativo") @db.VarChar(50)
+  codigoUmsa      String?      @map("codigo_umsa") @db.VarChar(50)
+  laboratorioId   String?      @map("laboratorio_id") @db.VarChar(20)
+  equipoCodigo    String?      @map("equipo_codigo") @db.VarChar(30)
+  estado          String       @default("Funcionando") @db.VarChar(30)
+  activo          Boolean      @default(true)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  equipo          Equipo?      @relation(fields: [equipoCodigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  laboratorio     Laboratorio? @relation(fields: [laboratorioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([equipoCodigo], map: "idx_perifericos_equipo")
   @@index([laboratorioId], map: "idx_perifericos_lab")
@@ -215,10 +241,12 @@ model InventarioItem {
 
 model Insumo {
   nombre        String        @id @db.VarChar(100)
+  tipo          String?       @db.VarChar(50)
   unidadMedida  String        @map("unidad_medida") @db.VarChar(30)
   stock         Int           @default(0)
   stockMinimo   Int           @default(0) @map("stock_minimo")
   activo        Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   insumosUsados InsumoUsado[]
 
@@ -357,8 +385,8 @@ model ReportePasante {
   categoria         String?      @db.VarChar(50)
   prioridad         String       @default("Media") @db.VarChar(10)
   fecha             DateTime     @default(now()) @db.Timestamp(6)
-  estado            String       @default("Nuevo") @db.VarChar(20)
-  resolucionDetalle String?      @map("resolucion_detalle")
+  estado            String       @default("Nuevo") @db.VarChar(30)
+  resolucionDetalle String?      @map("resolucion_detalle") @db.Text
   atendidoPor       String?      @map("atendido_por") @db.VarChar(20)
   activo            Boolean      @default(true)
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
@@ -390,6 +418,24 @@ model Log {
   @@index([timestamp(sort: Desc)], map: "idx_logs_timestamp")
   @@index([usuarioId], map: "idx_logs_usuario")
   @@map("logs")
+}
+
+model AuditChange {
+  id         String   @id @db.VarChar(30)
+  tabla      String   @db.VarChar(50)
+  operacion  String   @db.VarChar(10)
+  registroId String?  @map("registro_id") @db.VarChar(50)
+  usuarioId  String?  @map("usuario_id") @db.VarChar(20)
+  campo      String?  @db.VarChar(50)
+  valorAnterior String? @map("valor_anterior")
+  valorNuevo    String? @map("valor_nuevo")
+  timestamp  DateTime @default(now()) @db.Timestamp(6)
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([tabla], map: "idx_audit_tabla")
+  @@index([timestamp(sort: Desc)], map: "idx_audit_timestamp")
+  @@index([registroId], map: "idx_audit_registro")
+  @@map("audit_changes")
 }
 
 
